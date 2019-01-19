@@ -2,17 +2,20 @@
 
 ## Data Exploration
 * Large imbalence of new whales /lots of whale types with just one sample
-    * Leave in for now
+    -> Leave in for now
 * images of the flank can be small relative to entire image 
-    -> train specifically these against same label?
-    -> online community uses bounding boxes for image processing. How easy is it to automate this?
-    * Don't care for now
+    * train specifically these against same label?
+    * online community uses bounding boxes for image processing. How easy is it to automate this?
+    -> Don't care for now
 
 * images can be of different sizes
-    * Resize for now
+    -> Resize for now
 ##TODO
 * learn data augmentation library -> look at the example on Kaggle
-* get more samples from server
 
-nearest neighbors at the end
+* test if having more fully connected layers help 
+    * perhaps dimension is too high
+* test whether compare pairwise rather than all n^2 is sufficent
+    
+* nearest neighbors at the end
 ## Plan

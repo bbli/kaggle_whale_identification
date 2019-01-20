@@ -28,10 +28,23 @@ resizer = ReSizer(200,350)
 image_scaler = ImageScalar(255)
 channel_mover = AxisMover(-1,0)
 tensor_converter = ToTensor()
+batch_size = 16
+transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
 
-directory_name ='subset'
-train_transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
-train_dataset = DataSet(directory_name,transform=train_transform)
+directory ='subset'
+df = pd.read_csv(directory+'/train.csv')
+df.index = df['Image']
+img_names = getListOfImageNames(directory+'/data')
+
+transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
+random_dataset = RandomDataSet(df,img_names,directory,transform=transform)
+random_loader = DataLoader(random_dataset,shuffle=True,batch_size=batch_size)
+random_img_iterator = iter(random_loader)
+
+dict_of_images = createDictOfImagesForEachLabel(df,img_names)
+dict_of_dataloaders = createDictOfDataLoaders(dict_of_images,batch_size,directory,transform)
+dict_of_dataiterators = createDictOfDataIterators(dict_of_dataloaders)
+label_names = dict_of_dataiterators.keys()
 ################ **Setup and Hyperparameters** ##################
 # @lp
 # def main():
@@ -48,20 +61,15 @@ net.train()
 LR = 5e-3
 cos_period = 80
 drop_period = 300
-batch_size = 16
-
-train_loader = DataLoader(train_dataset,shuffle=True,batch_size=batch_size)
-random_img_iterator = iter(train_loader)
-dict_of_data_iterables = createDictOfDataIterables(df)
-list_of_DataLoaders = createListOfDataIterators(df)
+batch_size = batch_size
 
 optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
 scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
-criterion = nn.MSELoss()
+criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 
 
 # w.add_text("Hyperparameters","learning_rate: {} batch size: {} cosine period: {} drop period: {}".format(LR,batch_size,cos_period,drop_period))
-w.add_experiment_parameter("Learnin Rate",LR)
+w.add_experiment_parameter("Learning Rate",LR)
 w.add_experiment_parameter("Batch Size",batch_size)
 w.add_experiment_parameter("Cosine Period",cos_period)
 w.add_experiment_parameter("Drop Period",drop_period)

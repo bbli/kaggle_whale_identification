@@ -14,9 +14,9 @@ def checkTrainSetMean(dataset,center_scalar):
     mean =0
     ## final mean should be 0 since each pixel location has been normalized to 0 mean, and we are adding them all up as random variables
     # numbers are -0.003, 
-    image_names = getListOfImageNames(dataset.dir)
+    image_names = getListOfImageNames(dataset.directory)
     for name in image_names:
-        img = cv2.imread(dataset.dir+'/'+name)
+        img = cv2.imread(dataset.directory+'/'+name)
         a = np.mean(img-center_scalar.mean_values_array)
         mean += a 
     print("Mean pixel value-after transforms: {}".format(mean))
@@ -100,13 +100,13 @@ class Standarize():
         '''
         count = 0
         start = time()
-        image_names = getListOfImageNames(dataset.dir)
+        image_names = getListOfImageNames(dataset.directory)
 
-        img = cv2.imread(dataset.dir+'/'+image_names[0])
+        img = cv2.imread(dataset.directory+'/'+image_names[0])
         mean_array = np.zeros(img.shape,dtype = np.float32)
 
         for name in image_names:
-            img = cv2.imread(dataset.dir+'/'+name)
+            img = cv2.imread(dataset.directory+'/'+name)
             ## since imread fails silently
             mean_array = mean_array + img
             count += 1
@@ -131,56 +131,73 @@ def getListOfImageNames(directory):
     return output
 
 ################ **Main DataSet Class** ##################
-class DataSet(Dataset):
-    def __init__(self,directory,transform=None,test=False):
+class RandomDataSet(Dataset):
+    def __init__(self,df,img_names,directory,transform=None,train=True):
         '''
         Descriptions/Assumptions: assumes labels is one level up, and that images have the following pattern "frame*.jpg"
         Arguments: 
         Returns: 
         '''
-        self.dir = directory
+        self.directory = directory
         self.transform = transform
-        self.test = test
+        self.train = train
         
-        if not self.test:
-            self.list_of_labels = pd.read_csv(directory+'/train.csv')
-            self.list_of_labels.index = self.list_of_labels['Image']
-        self.list_of_frames = getListOfImageNames(directory+'/data')
-        self.length = len(self.list_of_frames)
-
-    ## Idk purpose of this, as iterator will just run right pass without raising exception
-    ## Probably for DataLoader
+        self.df = df
+        self.img_names = img_names
+        self.length = len(self.img_names)
     def __len__(self):
         return self.length
     # @lp
     def __getitem__(self,idx):
         ################ **Getting Pic** ##################
-        frame_string1 = self.list_of_frames[idx]
-        pic = cv2.imread(self.dir+'/data/'+frame_string1)
+        img_name = self.img_names[idx]
+        pic = cv2.imread(self.directory+'/data/'+img_name)
         # pic = cv2.cvtColor(pic1,cv2.COLOR_BGR2GRAY)
 
         if self.transform:
             pic = self.transform(pic)
 
         ################ **Getting Label and Returning** ##################
-        if not self.test:
-            label = self.list_of_labels['Id'][frame_string1]
+        if self.train:
+            label = self.df['Id'][img_name]
             return pic,label
         else:
-            return pic,index
+            return pic,idx
 
-# max_magnitude_scalar = MaxMagScalar(0.25)
-# down_sampler = DownSample(2)
-resizer = ReSizer(200,350)
-image_scaler = ImageScalar(255)
-channel_mover = AxisMover(-1,0)
-tensor_converter = ToTensor()
+class LabelDataSet(Dataset):
+    def __init__(self,directory,label,dict_of_images,transform=None):
+        self.directory = directory
+        self.transform = transform
 
-directory_name ='subset'
+        self.img_names =  dict_of_images[label]
+        self.length = len(self.img_names)
 
-# preprocess_transform = Compose([resizer])
-preprocess_dataset = DataSet(directory_name)
+    def __len__(self):
+        return self.length
+    def __getitem__(self,idx):
+        ################ **Getting Pic** ##################
+        img_name = self.img_names[idx]
+        pic = cv2.imread(self.directory+'/data/'+img_name)
+        # pic = cv2.cvtColor(pic1,cv2.COLOR_BGR2GRAY)
 
-train_transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
-train_dataset = DataSet(directory_name,transform=train_transform)
-img,label = preprocess_dataset[1]
+        if self.transform:
+            pic = self.transform(pic)
+
+        return pic
+
+
+if __name__ == '__main__':
+    resizer = ReSizer(200,350)
+    image_scaler = ImageScalar(255)
+    channel_mover = AxisMover(-1,0)
+    tensor_converter = ToTensor()
+
+    directory_name ='subset'
+    df = pd.read_csv(directory_name+'/train.csv')
+
+    # preprocess_transform = Compose([resizer])
+    preprocess_dataset = DataSet(directory_name)
+
+    train_transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
+    train_dataset = DataSet(directory_name,transform=train_transform)
+    img,label = preprocess_dataset[1]

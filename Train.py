@@ -35,13 +35,16 @@ directory ='subset'
 df = pd.read_csv(directory+'/train.csv')
 df.index = df['Image']
 img_names = getListOfImageNames(directory+'/data')
+train_img_names,val_img_names = getTrainValSplit(img_names)
+percentage_new_whale = getPercentageOfNewWhales(val_img_names,df)
+print("Percentage of new whales in val set: ",percentage_new_whale)
 
 transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
-random_dataset = RandomDataSet(df,img_names,directory,transform=transform)
+random_dataset = RandomDataSet(df,train_img_names,directory,transform=transform)
 random_loader = DataLoader(random_dataset,shuffle=True,batch_size=batch_size)
 random_img_iterator = iter(random_loader)
 
-dict_of_images = createDictOfImagesForEachLabel(df,img_names)
+dict_of_images = createDictOfImagesForEachLabel(df,train_img_names)
 dict_of_dataloaders = createDictOfDataLoaders(dict_of_images,batch_size,directory,transform)
 dict_of_dataiterators = createDictOfDataIterators(dict_of_dataloaders)
 label_names = dict_of_dataiterators.keys()
@@ -100,9 +103,10 @@ for epoch in range(epochs):
             same_img_batch.to(device)
             outputs = net(same_img_batch)
             loss = getSameLabelLoss(outputs)
+            BackpropAndUpdate(loss,optimizer,scheduler,w,net)
+
             w.add_scalar("Same Loss",loss.item())
             print("Same Loss: ",loss.item())
-            BackpropAndUpdate(loss,optimizer,scheduler,w,net)
         ################ ** Mostly Different Labels** ##################
         try:
             random_img_batch, random_label_batch = next(random_img_iterator)
@@ -124,3 +128,19 @@ for epoch in range(epochs):
         w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
 
 w.close()
+
+################ **Evaluating** ##################
+total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
+
+from sklearn.neighbors import NearestNeighbors
+neigh = NearestNeighbors(n_neighbors=6)
+neigh.fit(total_train_outputs)
+
+val_dataset = RandomDataSet(df,val_img_names,directory,transform)
+val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
+total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,net,device)
+
+distances,indices = neigh.kneighbors(total_val_outputs)
+labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
+
+final_score = map_per_set(total_val_labels,labels_prediction_matrix)

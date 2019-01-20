@@ -17,6 +17,10 @@
 > log percentage of same label targets 
 * nearest neighbors at the end
     * just use sklearn nearest neighbor?
+    * if greater than 70% a label, make that the first label
+    * how to check that my code is correct?
+* test whether that guys map5 code works
+    * test whether my code works
 
 
 * learn data augmentation library -> look at the example on Kaggle
@@ -26,5 +30,6 @@
     * perhaps dimension is too high
 * test whether compare pairwise rather than all n^2 is sufficent
 * hypertune margin parameter
+* hypertune num of nearest neighbors
     
 ## Plan

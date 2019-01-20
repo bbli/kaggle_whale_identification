@@ -162,7 +162,7 @@ class RandomDataSet(Dataset):
             label = self.df['Id'][img_name]
             return pic,label
         else:
-            return pic,idx
+            return pic
 
 class LabelDataSet(Dataset):
     def __init__(self,directory,label,dict_of_images,transform=None):

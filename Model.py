@@ -17,14 +17,25 @@ class FunctionalModule(nn.Module):
         if self.show:
             print("size after convolve: {}".format(x.shape))
         return x
-def getAverageGradientValue(module):
-    count = 0
-    total = 0
-    for param in module.parameters():
-        gradient_array = param.grad
-        count += getProductOfTuple(gradient_array)
-        total += gradient_array.abs().sum().item()
-    return total/count
+    @staticmethod
+    def getAverageGradientValue(module):
+        count = 0
+        total = 0
+        for param in module.parameters():
+            gradient_array = param.grad
+            count += getProductOfTuple(gradient_array)
+            total += gradient_array.abs().sum().item()
+        return total/count
+    @staticmethod
+    def getFrequencyOfDeadNeurons(torch_tensor):
+        torch_matrix = torch_tensor.detach()
+        negative_values = (torch_matrix==0).sum().item()
+        total_number_of_values = getProductOfTuple(torch_matrix)
+        return negative_values/total_number_of_values
+    @staticmethod
+    def getAverageBiasValue(module):
+        bias_array = module.state_dict()['bias'].detach()
+        return bias_array.abs().mean().item()
 
 def getProductOfTuple(torch_tensor):
     out = 1
@@ -32,15 +43,6 @@ def getProductOfTuple(torch_tensor):
         out = out*num
     return out
 
-def getFrequencyOfDeadNeurons(torch_tensor):
-    torch_matrix = torch_tensor.detach()
-    negative_values = (torch_matrix==0).sum().item()
-    total_number_of_values = getProductOfTuple(torch_matrix)
-    return negative_values/total_number_of_values
-
-def getAverageBiasValue(module):
-    bias_array = module.state_dict()['bias'].detach()
-    return bias_array.abs().mean().item()
 ########################
 
 
@@ -90,7 +92,7 @@ class ResNetDouble(FunctionalModule):
         y = self.double_conv(x)
         return x+y
 
-class Net(nn.Module):
+class Net(FunctionalModule):
     def __init__(self):
         super().__init__()
         self.features = nn.Sequential(
@@ -116,7 +118,8 @@ class Net(nn.Module):
                 # nn.ReLU(),
                 )
 
-        # self.fc1 = nn.Linear(256,100)
+        # self.fc1 = nn.Linear(256,10)
+        # self.fc2 = nn.Linear(10,2)
         # self.fc_batch1 = nn.BatchNorm1d(100)
         # self.fc_last = nn.Linear(100,1)
 
@@ -127,23 +130,22 @@ class Net(nn.Module):
     # def avg_bias_value(self):
        # return self.avg_bias_value 
 
-    def forward(self,x,y):
+    def forward(self,x):
         x = self.features(x)
         x = x.view(x.shape[0],-1)
-
-        y = self.features(y)
-        y = y.view(y.shape[0],-1)
-        __import__('IPython').embed()
-
-        return x,y
+        
+        # x = self.fc1(x)
+        # x = self.fc2(x)
+        return x
 
 def Distance(output1,output2):
     return torch.sum(torch.abs(output1-output2))
-net = Net()
-train_loader = DataLoader(train_dataset,batch_size=1,shuffle=False)
-iterator = iter(train_loader)
-img1,label1 = next(iterator)
-img2,label2 = next(iterator)
-output1,output2 = net(img1,img2)
-delta = Distance(output1,output2)
-criterion = nn.HingeEmbeddingLoss(margin=2,)
+if __name__ == '__main__':
+    net = Net()
+    train_loader = DataLoader(train_dataset,batch_size=1,shuffle=False)
+    iterator = iter(train_loader)
+    img1,label1 = next(iterator)
+    img2,label2 = next(iterator)
+    output1,output2 = net(img1,img2)
+    delta = Distance(output1,output2)
+    criterion = nn.HingeEmbeddingLoss(margin=2,)

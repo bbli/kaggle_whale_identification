@@ -46,8 +46,6 @@ dict_of_dataloaders = createDictOfDataLoaders(dict_of_images,batch_size,director
 dict_of_dataiterators = createDictOfDataIterators(dict_of_dataloaders)
 label_names = dict_of_dataiterators.keys()
 ################ **Setup and Hyperparameters** ##################
-# @lp
-# def main():
 start_time = time()
 w= SummaryWriter('commai','test')
 # w = SummaryWriter("debug")
@@ -60,11 +58,11 @@ net.train()
 
 LR = 5e-3
 cos_period = 80
-drop_period = 300
+# drop_period = 300
 batch_size = batch_size
 
 optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
-scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
+scheduler = LambdaLR(optimizer,lr_lambda=cosine(cos_period))
 criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 
 
@@ -72,7 +70,7 @@ criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 w.add_experiment_parameter("Learning Rate",LR)
 w.add_experiment_parameter("Batch Size",batch_size)
 w.add_experiment_parameter("Cosine Period",cos_period)
-w.add_experiment_parameter("Drop Period",drop_period)
+# w.add_experiment_parameter("Drop Period",drop_period)
 ################ **Misc Variables** ##################
 count = 0
 # flag = False
@@ -81,7 +79,7 @@ total_load_time = 0
 total_train_time = 0
 
 ################ **Training Code** ##################
-epochs = 10
+epochs = 1
 batch_size = 16
 for epoch in range(epochs):
     # print(net.fc2.weight.grad)
@@ -102,6 +100,8 @@ for epoch in range(epochs):
             same_img_batch.to(device)
             outputs = net(same_img_batch)
             loss = getSameLabelLoss(outputs)
+            w.add_scalar("Same Loss",loss.item())
+            print("Same Loss: ",loss.item())
             BackpropAndUpdate(loss,optimizer,scheduler,w,net)
         ################ ** Mostly Different Labels** ##################
         try:
@@ -116,9 +116,11 @@ for epoch in range(epochs):
         targets = createTargets(label,random_label_batch)
         loss = getDifferentLabelLoss(output1,output2,targets,criterion)
         BackpropAndUpdate(loss,optimizer,scheduler,w,net)
-        print("Same Img: ",same_img_batch.shape)
-        print("Random Img: ", random_img_batch.shape)
-        __import__('ipdb').set_trace()
 
+        ##Log
+        w.add_scalar("Different Loss",loss.item())
+        print("Different Loss: ",loss.item())
+        percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
+        w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
 
 w.close()

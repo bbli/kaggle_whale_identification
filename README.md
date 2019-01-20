@@ -13,17 +13,18 @@
 ##TODO
 > test if dataloaders just return 1 -> yes
 > check gradient is updating in every for loop
-* optimize code
-* seperate Losses?
-* log percentage of same label targets 
-* create a whole new dataloader, rather than new dataiterator once expire -> to get shuffle
+> seperate Losses?
+> log percentage of same label targets 
+* nearest neighbors at the end
+    * just use sklearn nearest neighbor?
 
 
 * learn data augmentation library -> look at the example on Kaggle
+* look at test set distribution
+
 * test if having more fully connected layers help 
     * perhaps dimension is too high
 * test whether compare pairwise rather than all n^2 is sufficent
 * hypertune margin parameter
     
-* nearest neighbors at the end
 ## Plan

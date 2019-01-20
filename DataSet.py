@@ -196,8 +196,9 @@ if __name__ == '__main__':
     df = pd.read_csv(directory_name+'/train.csv')
 
     # preprocess_transform = Compose([resizer])
-    preprocess_dataset = DataSet(directory_name)
+    preprocess_dataset = RandomDataSet(directory_name)
 
     train_transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
-    train_dataset = DataSet(directory_name,transform=train_transform)
+    train_dataset = RandomDataSet(directory_name,transform=train_transform)
+    train_loader = DataLoader(train_dataset, batch_size=10)
     img,label = preprocess_dataset[1]

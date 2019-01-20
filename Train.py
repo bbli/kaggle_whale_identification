@@ -84,78 +84,41 @@ total_train_time = 0
 epochs = 10
 batch_size = 16
 for epoch in range(epochs):
-    for label in list_of_labels:
-        target = 1
-        img_batch1 = RandomImagesFromLabel(label,batch_size)
-        img_batch2 = RandomImagesFromLabel(label,batch_size)
-        random_img_batch = RandomImages(batch_size)
+    # print(net.fc2.weight.grad)
 
-        output1 = net(img_batch1)
-        output2 = net(img_batch2)
-        random_output = net(random_img_batch)
+    for label in label_names:
+        ################ **Same Labels** ##################
+        ## Generate next training images
+        try:
+            same_img_batch = next(dict_of_dataiterators[label])
+        except StopIteration:
+            dict_of_dataiterators[label] = iter(dict_of_dataloaders[label])
+            same_img_batch = next(dict_of_dataiterators[label])
 
-        for img in img_batch1:
-            loss = loss + getHingeLoss(output1,output2)
-            loss = loss + getHineLoss(output1,random_output)
-    try:
-        random_img_batch = next(random_img_iterator)
-    else StopIteration:
-        random_img_iterator = iter(train_loader)
-        random_img_batch = next(random_img_iterator)
+        ## No point in comparing with itself
+        if len(same_img_batch) == 1:
+            pass
+        else:
+            same_img_batch.to(device)
+            outputs = net(same_img_batch)
+            loss = getSameLabelLoss(outputs)
+            BackpropAndUpdate(loss,optimizer,scheduler,w,net)
+        ################ ** Mostly Different Labels** ##################
+        try:
+            random_img_batch, random_label_batch = next(random_img_iterator)
+        except StopIteration:
+            random_img_iterator = iter(random_loader)
+            random_img_batch, random_label_batch = next(random_img_iterator)
+
+        random_img_batch.to(device)
+        output1 = net(same_img_batch)
+        output2 = net(random_img_batch)
+        targets = createTargets(label,random_label_batch)
+        loss = getDifferentLabelLoss(output1,output2,targets,criterion)
+        BackpropAndUpdate(loss,optimizer,scheduler,w,net)
+        print("Same Img: ",same_img_batch.shape)
+        print("Random Img: ", random_img_batch.shape)
+        __import__('ipdb').set_trace()
 
 
-
-for epoch in range(epochs):
-    print("Current epoch: ",epoch)
-    load_time1 = time()
-    for img,label in train_loader:
-        ## Initial Log
-        count += 1
-        load_time2 = time()
-        total_load_time += load_time2-load_time1 
-        train_time1 = time()
-
-        img,label = img.to(device).float(), label.to(device).float()
-        output = net(img)
-
-        ## Log
-        max_output = output.detach().max().item()
-        # print("Max output: ", max_output)
-        w.add_scalar("Max Output",max_output)
-        w.add_scalar("Std of Output",output.detach().std().item())
-
-        loss = criterion(output,label)
-
-        ## Log
-        w.add_scalar("Loss",loss.item())
-        print("Loss: ",loss.item())
-
-        optimizer.zero_grad()
-        loss.backward()
-
-        ## Log
-        avg_grad_last = getAverageGradientValue(net.fc_last)
-        avg_grad_fc1 = getAverageGradientValue(net.fc1)
-        avg_grad_conv1 = getAverageGradientValue(net.features[0].stacked_conv[0])
-        w.add_scalar("Avg Gradient of fc last",avg_grad_last)
-        w.add_scalar("Avg Gradient of fc1",avg_grad_fc1)
-        w.add_scalar("Avg Gradient of conv1",avg_grad_conv1)
-        w.add_scalar("Percentage of Dead Neurons Final Layer",net.freq_of_dead_neurons)
-        # w.add_scalar("Bias Value before Final Layer",net.avg_bias_value)
-        # print("Freq: ",net.freq_of_dead_neurons)
-        # print("Output: ",output)
-        # print("Learning Rate: ",optimizer.state_dict()['param_groups'][0]['lr'])
-        w.add_scalar("Learning Rate",optimizer.state_dict()['param_groups'][0]['lr'])
-        optimizer.step()
-        scheduler.step()
-        # print(optimizer.state_dict()['param_groups'][0]['lr'])
-
-        ## Ending Log
-        train_time2 = time()
-        total_train_time += train_time2-train_time1
-        load_time1 = time()
-end_time = time()
 w.close()
-print("Total time: ",end_time-start_time)
-print("Time to load dataset: ", total_load_time)
-print("Time to train: ", total_train_time)

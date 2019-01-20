@@ -16,6 +16,7 @@
 * optimize code
 * seperate Losses?
 * log percentage of same label targets 
+* create a whole new dataloader, rather than new dataiterator once expire -> to get shuffle
 
 
 * learn data augmentation library -> look at the example on Kaggle

@@ -12,7 +12,7 @@ from torch import optim
 from torch.optim.lr_scheduler import LambdaLR
 from math import cos,pi
 from line_profiler import LineProfiler
-lp = LineProfiler
+lp = LineProfiler()
 
 def cosine_drop(cos_period,explore_period,decay):
     factor = 1

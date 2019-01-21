@@ -1,4 +1,3 @@
-import ipdb 
 import cv2
 # from itertools import permutation
 # from numpy.random import permutation

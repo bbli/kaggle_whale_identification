@@ -153,7 +153,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("Learning now doesn't die off exponentially. Am now lowering features dimension with dense layer")
+w.add_thought("Now trying 2 layers with selu")
 w.close()
 end = time()
 eval_end = time()

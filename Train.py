@@ -18,7 +18,7 @@ def cosine_drop(cos_period,explore_period,decay):
     factor = 1
     def f(episode):
         nonlocal factor
-        if episode!=0 and (episode %explore_period == 0):
+        if episode!=0 and (episode %explore_period == 0) and factor>0.003:
             factor = factor*decay
             # print("Dropped Factor to: ",factor)
         modulus = episode % cos_period
@@ -91,6 +91,7 @@ train_start = time()
 ################ **Training Code** ##################
 for epoch in range(epochs):
     # print(net.fc2.weight.grad)
+    print("Current epoch: ",epoch)
 
     for label in label_names:
         count += 1

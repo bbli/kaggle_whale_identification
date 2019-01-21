@@ -133,7 +133,7 @@ def getAllOutputsFromLoader(dataloader,net,device):
     total_labels = []
     with torch.no_grad():
         for i,(img_batch,label_batch) in enumerate(dataloader):
-            img_batch.to(device)
+            img_batch = img_batch.to(device)
             preds = net(img_batch)
             total_labels = total_labels + list(label_batch) 
             if i == 0:

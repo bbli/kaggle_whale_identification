@@ -134,7 +134,6 @@ for epoch in range(epochs):
         print("Different Loss: ",loss.item())
         percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
         w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
-        break
     ################ **Evaluating after every epoch** ##################
     total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
 
@@ -151,7 +150,7 @@ for epoch in range(epochs):
 
     score = map_per_set(total_val_labels,labels_prediction_matrix)
     w.add_scalar("Score",score)
-        
+train_end = time()        
 
 ################ **Evaluating** ##################
 eval_start = time()

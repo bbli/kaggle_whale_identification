@@ -123,7 +123,7 @@ def main():
             same_img_batch = same_img_batch.to(device)
             output1 = net(same_img_batch)
             output2 = net(random_img_batch)
-            targets = createTargets(label,random_label_batch)
+            targets = createTargets(label,random_label_batch).to(device)
             loss = getDifferentLabelLoss(output1,output2,targets,criterion)
             BackpropAndUpdate(loss,optimizer,scheduler,w,net)
 

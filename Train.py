@@ -69,9 +69,10 @@ LR = 5e-3
 cos_period = 25
 drop_period = 70
 batch_size = batch_size
+epochs = 5
 
 optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
-scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.3))
+scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
 criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 
 
@@ -79,6 +80,7 @@ criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 w.add_experiment_parameter("Learning Rate",LR)
 w.add_experiment_parameter("Batch Size",batch_size)
 w.add_experiment_parameter("Cosine Period",cos_period)
+w.add_experiment_parameter("Epochs",epochs)
 # w.add_experiment_parameter("Drop Period",drop_period)
 ################ **Misc Variables** ##################
 count = 0
@@ -89,8 +91,6 @@ train_start = time()
 # total_train_time = 0
 
 ################ **Training Code** ##################
-epochs = 1
-batch_size = 16
 for epoch in range(epochs):
     # print(net.fc2.weight.grad)
 

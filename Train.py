@@ -32,7 +32,7 @@ resizer = ReSizer(200,350)
 image_scaler = ImageScalar(255)
 channel_mover = AxisMover(-1,0)
 tensor_converter = ToTensor()
-batch_size = 16
+batch_size = 32
 transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
 
 directory ='subset'
@@ -170,7 +170,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("Now trying 2 layers with selu")
+w.add_thought("selu was about the same. switching back to relu and increasing batch size")
 w.close()
 end = time()
 eval_end = time()

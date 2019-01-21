@@ -50,7 +50,7 @@ dict_of_dataiterators = createDictOfDataIterators(dict_of_dataloaders)
 label_names = dict_of_dataiterators.keys()
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
-w= SummaryWriter('commai','test')
+w= SummaryWriter('whale','first')
 # w = SummaryWriter("debug")
 # use_cuda = True
 use_cuda = False

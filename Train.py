@@ -105,7 +105,7 @@ def main():
             if len(same_img_batch) == 1:
                 pass
             else:
-                same_img_batch.to(device)
+                same_img_batch = same_img_batch.to(device)
                 outputs = net(same_img_batch)
                 loss = getSameLabelLoss(outputs)
                 BackpropAndUpdate(loss,optimizer,scheduler,w,net)
@@ -119,8 +119,8 @@ def main():
                 random_img_iterator = iter(random_loader)
                 random_img_batch, random_label_batch = next(random_img_iterator)
 
-            random_img_batch.to(device)
-            same_img_batch.to(device)
+            random_img_batch = random_img_batch.to(device)
+            same_img_batch = same_img_batch.to(device)
             output1 = net(same_img_batch)
             output2 = net(random_img_batch)
             targets = createTargets(label,random_label_batch)

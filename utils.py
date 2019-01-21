@@ -140,7 +140,10 @@ def getAllOutputsFromLoader(dataloader,net,device):
                 total_preds = preds
             else:
                 total_preds = torch.cat((total_preds,preds),0)
-        total_preds = total_preds.numpy()
+        if total_preds.is_cuda:
+            total_preds = total_preds.cpu().numpy()
+        else:
+            total_preds = total_preds.numpy()
     return total_preds, total_labels
 
 def convertIndicesToTrainLabels(indices,total_train_labels):

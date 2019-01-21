@@ -18,11 +18,9 @@ def cosine_drop(cos_period,explore_period,decay):
     factor = 1
     def f(episode):
         nonlocal factor
-        global loss
         if episode!=0 and (episode %explore_period == 0):
-            if loss>40:
-                factor = factor*decay
-                # print("Dropped Factor to: ",factor)
+            factor = factor*decay
+            # print("Dropped Factor to: ",factor)
         modulus = episode % cos_period
         return factor*0.5*(1.1+cos(pi*modulus/cos_period))
     return f

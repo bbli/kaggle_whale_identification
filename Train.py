@@ -66,12 +66,12 @@ net.to(device)
 net.train()
 
 LR = 5e-3
-cos_period = 80
-# drop_period = 300
+cos_period = 25
+drop_period = 70
 batch_size = batch_size
 
 optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
-scheduler = LambdaLR(optimizer,lr_lambda=cosine(cos_period))
+scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.3))
 criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 
 
@@ -154,14 +154,10 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("First test on full dataset")
+w.add_thought("Changed to cosine_drop as loss leveled out")
 w.close()
 end = time()
 eval_end = time()
 print("Time elapsed: ",end-start)
 print("Train time: ",train_end -train_start)
 print("Eval time: ",eval_end-eval_start)
-
-first3predictions = indices[0:3]
-first3labels = total_val_labels[0:3]
-first3score = map_per_set(first3labels,first3predictions)

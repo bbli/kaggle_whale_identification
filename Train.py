@@ -77,7 +77,7 @@ criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 # w.add_text("Hyperparameters","learning_rate: {} batch size: {} cosine period: {} drop period: {}".format(LR,batch_size,cos_period,drop_period))
 w.add_experiment_parameter("Learning Rate",LR)
 w.add_experiment_parameter("Batch Size",batch_size)
-w.add_experiment_parameter("Cosine Period",cos_period)
+# w.add_experiment_parameter("Cosine Period",cos_period)
 w.add_experiment_parameter("Epochs",epochs)
 # w.add_experiment_parameter("Drop Period",drop_period)
 ################ **Misc Variables** ##################
@@ -169,7 +169,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("selu was about the same. switching back to relu and increasing batch size")
+w.add_thought("moved batch norm back to before concat")
 w.close()
 end = time()
 eval_end = time()

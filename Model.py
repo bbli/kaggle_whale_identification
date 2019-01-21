@@ -60,8 +60,8 @@ class DoubleConvBlock(FunctionalModule):
                 nn.BatchNorm2d(out_channels),
                 nn.ReLU(),
 
-                nn.Conv2d(out_channels,out_channels,kernel_size=kernel_size),
-                # nn.BatchNorm2d(out_channels),
+                nn.Conv2d(out_channels,out_channels,kernel_size=kernel_size,padding=padding),
+                nn.BatchNorm2d(out_channels),
                 # nn.ReLU(),
                 )
     def _forward(self,x):
@@ -98,11 +98,9 @@ class ResNetDouble(FunctionalModule):
         super().__init__()
         self.double_conv = DoubleConvBlock(in_channels,out_channels,kernel_size,padding=padding)
         self.show = show
-        self.batch_norm = nn.BatchNorm2d(out_channels)
     def _forward(self,x):
         y = self.double_conv(x)
-        z = x+y
-        return F.relu(self.batch_norm(z))
+        return F.relu(x+y)
 
 class Net(FunctionalModule):
     def __init__(self):
@@ -112,18 +110,18 @@ class Net(FunctionalModule):
                 self.conv1,
                 nn.MaxPool2d(2),
 
-                DoubleConvBlock(24,32,kernel_size=3),
+                ConvBlock(24,32,kernel_size=3),
                 nn.MaxPool2d(2),
 
-                ResNetDouble(32,32,kernel_size=3,padding=2),
+                ResNetDouble(32,32,kernel_size=3,padding=1),
 
-                ResNetDouble(32,32,kernel_size=3,padding=2),
+                ResNetDouble(32,32,kernel_size=3,padding=1),
                 nn.MaxPool2d(2),
 
                 ConvBlock(32,64,kernel_size=1),
-                ResNetDouble(64,64,kernel_size=3,padding=2),
+                ResNetDouble(64,64,kernel_size=3,padding=1),
 
-                ResNetDouble(64,64,kernel_size=3,padding=2),
+                ResNetDouble(64,64,kernel_size=3,padding=1),
                 # nn.MaxPool2d(2),
 
                 nn.AdaptiveAvgPool2d((2,2))

@@ -21,8 +21,8 @@
     > how to check that my code is correct? Walk through like always
 * test whether that guys map5 code works
     * wait until code finishes then just manually calculate first 3
-* decide on dropping period of cosine
-* check length of label names b/c shouldn't we have stopped at 12000 iterations?
+
+* test if batch norm after relu works better 
 
 
 * learn data augmentation library -> look at the example on Kaggle

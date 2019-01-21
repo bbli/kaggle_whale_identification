@@ -61,26 +61,26 @@ class DoubleConvBlock(FunctionalModule):
                 nn.ReLU(),
 
                 nn.Conv2d(out_channels,out_channels,kernel_size=kernel_size),
-                nn.BatchNorm2d(out_channels),
-                nn.ReLU(),
+                # nn.BatchNorm2d(out_channels),
+                # nn.ReLU(),
                 )
     def _forward(self,x):
         x = self.stacked_conv(x)
         return x
 class ConvBlock(FunctionalModule):
-    def __init__(self,in_channels,out_channels,kernel_size,pool=True,show=False):
+    def __init__(self,in_channels,out_channels,kernel_size,stride,pool=True,show=False):
         super().__init__()
         self.show = show
         if pool:
             self.conv = nn.Sequential(
-                    nn.Conv2d(in_channels,out_channels,kernel_size=kernel_size),
+                    nn.Conv2d(in_channels,out_channels,kernel_size=kernel_size,stride=stride),
                     nn.BatchNorm2d(out_channels),
                     nn.ReLU(),
                     nn.MaxPool2d(kernel_size=2),
                     )
         else:
             self.conv = nn.Sequential(
-                    nn.Conv2d(in_channels,out_channels,kernel_size=kernel_size),
+                    nn.Conv2d(in_channels,out_channels,kernel_size=kernel_size,stride=stride),
                     nn.BatchNorm2d(out_channels),
                     nn.ReLU(),
                     )
@@ -98,15 +98,17 @@ class ResNetDouble(FunctionalModule):
         super().__init__()
         self.double_conv = DoubleConvBlock(in_channels,out_channels,kernel_size,padding=padding)
         self.show = show
+        self.batch_norm = BatchNorm2d(out_channels)
     def _forward(self,x):
         y = self.double_conv(x)
-        return x+y
+        z = x+y
+        return F.relu(self.batch_norm(z))
 
 class Net(FunctionalModule):
     def __init__(self):
         super().__init__()
         self.features = nn.Sequential(
-                DoubleConvBlock(3, 24, kernel_size=5),
+                ConvBlock(3, 24, kernel_size=8,stride=2),
                 nn.MaxPool2d(2),
 
                 DoubleConvBlock(24,32,kernel_size=3),

@@ -16,11 +16,13 @@
 > seperate Losses?
 > log percentage of same label targets 
 * nearest neighbors at the end
-    * just use sklearn nearest neighbor?
+    > just use sklearn nearest neighbor?
     * if greater than 70% a label, make that the first label
-    * how to check that my code is correct?
+    > how to check that my code is correct? Walk through like always
 * test whether that guys map5 code works
-    * test whether my code works
+    * wait until code finishes then just manually calculate first 3
+* decide on dropping period of cosine
+* check length of label names b/c shouldn't we have stopped at 12000 iterations?
 
 
 * learn data augmentation library -> look at the example on Kaggle

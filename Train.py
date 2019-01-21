@@ -29,6 +29,7 @@ def cosine_drop(cos_period,explore_period,decay):
 # @lp
 # def main():
 ################ **Loading DataSet** ##################
+start = time()
 resizer = ReSizer(200,350)
 image_scaler = ImageScalar(255)
 channel_mover = AxisMover(-1,0)
@@ -83,8 +84,8 @@ w.add_experiment_parameter("Cosine Period",cos_period)
 count = 0
 # flag = False
 # explore_count = 0
-total_load_time = 0
-total_train_time = 0
+# total_load_time = 0
+# total_train_time = 0
 
 ################ **Training Code** ##################
 epochs = 1
@@ -93,6 +94,7 @@ for epoch in range(epochs):
     # print(net.fc2.weight.grad)
 
     for label in label_names:
+        count += 1
         ################ **Same Labels** ##################
         ## Generate next training images
         try:
@@ -152,3 +154,5 @@ final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
 w.add_thought("First test on full dataset")
 w.close()
+end = time()
+print("Time elapsed: ",end-start)

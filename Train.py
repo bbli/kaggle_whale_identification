@@ -56,7 +56,7 @@ dict_of_dataiterators = createDictOfDataIterators(dict_of_dataloaders)
 label_names = dict_of_dataiterators.keys()
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
-w= SummaryWriter('whale','main')
+w= SummaryWriter('whale','subset')
 # w = SummaryWriter("debug")
 # use_cuda = True
 use_cuda = False
@@ -82,6 +82,7 @@ w.add_experiment_parameter("Cosine Period",cos_period)
 # w.add_experiment_parameter("Drop Period",drop_period)
 ################ **Misc Variables** ##################
 count = 0
+train_start = time()
 # flag = False
 # explore_count = 0
 # total_load_time = 0
@@ -134,9 +135,10 @@ for epoch in range(epochs):
         print("Different Loss: ",loss.item())
         percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
         w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
-
+train_end = time()
 
 ################ **Evaluating** ##################
+eval_start = time()
 total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
 
 from sklearn.neighbors import NearestNeighbors
@@ -155,4 +157,11 @@ w.add_experiment_parameter("Score",final_score)
 w.add_thought("First test on full dataset")
 w.close()
 end = time()
+eval_end = time()
 print("Time elapsed: ",end-start)
+print("Train time: ",train_end -train_start)
+print("Eval time: ",eval_end-eval_start)
+
+first3predictions = indices[0:3]
+first3labels = total_val_labels[0:3]
+first3score = map_per_set(first3labels,first3predictions)

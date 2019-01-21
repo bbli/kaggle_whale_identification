@@ -18,7 +18,7 @@ def cosine_drop(cos_period,explore_period,decay):
     factor = 1
     def f(episode):
         nonlocal factor
-        if episode!=0 and (episode %explore_period == 0) and factor>0.003:
+        if episode!=0 and (episode %explore_period == 0) and factor>0.02:
             factor = factor*decay
             # print("Dropped Factor to: ",factor)
         modulus = episode % cos_period
@@ -134,7 +134,24 @@ for epoch in range(epochs):
         print("Different Loss: ",loss.item())
         percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
         w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
-train_end = time()
+        break
+    ################ **Evaluating after every epoch** ##################
+    total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
+
+    from sklearn.neighbors import NearestNeighbors
+    neigh = NearestNeighbors(n_neighbors=6)
+    neigh.fit(total_train_outputs)
+
+    val_dataset = RandomDataSet(df,val_img_names,directory,transform)
+    val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
+    total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,net,device)
+
+    distances,indices = neigh.kneighbors(total_val_outputs)
+    labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
+
+    score = map_per_set(total_val_labels,labels_prediction_matrix)
+    w.add_scalar("Score",score)
+        
 
 ################ **Evaluating** ##################
 eval_start = time()

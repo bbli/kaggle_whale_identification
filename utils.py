@@ -115,7 +115,7 @@ def BackpropAndUpdate(loss,optimizer,scheduler,w,net):
     # w.add_scalar("Avg Gradient of fc last",avg_grad_last)
     # avg_grad_fc1 = getAverageGradientValue(net.fc1)
     # w.add_scalar("Avg Gradient of fc1",avg_grad_fc1)
-    avg_grad_conv1 = net.getAverageGradientValue(net.features[0].stacked_conv[0])
+    avg_grad_conv1 = net.getAverageGradientValue(net.conv1)
     w.add_scalar("Avg Gradient of conv1",avg_grad_conv1)
     # w.add_scalar("Percentage of Dead Neurons Final Layer",net.freq_of_dead_neurons)
     # w.add_scalar("Bias Value before Final Layer",net.avg_bias_value)

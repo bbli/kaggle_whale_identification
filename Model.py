@@ -48,6 +48,11 @@ def getProductOfTuple(torch_tensor):
 
 class DoubleConvBlock(FunctionalModule):
     def __init__(self,in_channels,out_channels,kernel_size,show=False,padding=0):
+        '''
+        Descriptions/Assumptions: Only pads the first conv block
+        Arguments: 
+        Returns: 
+        '''
         super().__init__()
         self.show = show
         self.stacked_conv = nn.Sequential(
@@ -85,6 +90,11 @@ class ConvBlock(FunctionalModule):
 
 class ResNetDouble(FunctionalModule):
     def __init__(self,in_channels,out_channels,kernel_size,padding,show=False):
+        '''
+        Descriptions/Assumptions: 
+        Arguments: `padding` needs to be chosen so that output of convolution has same spatial dimensions
+        Returns: 
+        '''
         super().__init__()
         self.double_conv = DoubleConvBlock(in_channels,out_channels,kernel_size,padding=padding)
         self.show = show
@@ -118,7 +128,7 @@ class Net(FunctionalModule):
                 # nn.ReLU(),
                 )
 
-        # self.fc1 = nn.Linear(256,10)
+        self.fc1 = nn.Linear(256,30)
         # self.fc2 = nn.Linear(10,2)
         # self.fc_batch1 = nn.BatchNorm1d(100)
         # self.fc_last = nn.Linear(100,1)
@@ -134,7 +144,7 @@ class Net(FunctionalModule):
         x = self.features(x)
         x = x.view(x.shape[0],-1)
         
-        # x = self.fc1(x)
+        x = self.fc1(x)
         # x = self.fc2(x)
         return x
 

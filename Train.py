@@ -18,7 +18,7 @@ def cosine_drop(cos_period,explore_period,decay):
     factor = 1
     def f(episode):
         nonlocal factor
-        if episode!=0 and (episode %explore_period == 0) and factor>0.05:
+        if episode!=0 and (episode %explore_period == 0) and factor>0.1:
             factor = factor*decay
             # print("Dropped Factor to: ",factor)
         modulus = episode % cos_period
@@ -69,10 +69,10 @@ drop_period = 450
 batch_size = batch_size
 epochs = 10
 
-optimizer1 = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
-optimizer = optim.Adam(net.parameters(),lr= LR)
+optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
+# optimizer = optim.Adam(net.parameters(),lr= LR)
 scheduler = LambdaLR(optimizer1,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
-criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
+criterion = nn.HingeEmbeddingLoss(margin = 8,reduction='none')
 
 
 # w.add_text("Hyperparameters","learning_rate: {} batch size: {} cosine period: {} drop period: {}".format(LR,batch_size,cos_period,drop_period))
@@ -172,7 +172,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("I feel like most of what I have been trying will need to be tried again later b/c they arn't addressing the problem at hand. In any case, am increasing epoch to 10 and trying Adam to try to solve this SAME LABEL Loss issue")
+w.add_thought("Back to SGD with higher cap on decay. increased margin and made output dimension smaller so net will do more pushing away")
 w.close()
 end = time()
 eval_end = time()

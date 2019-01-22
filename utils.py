@@ -103,7 +103,7 @@ def getDifferentLabelLoss(output1,output2,targets,criterion):
             total_loss = loss
         else:
             total_loss = torch.cat((total_loss,loss),0)
-        return total_loss.mean()
+    return total_loss.mean()
 
 def BackpropAndUpdate(w,net,loss,optimizer,scheduler=None):
     optimizer.zero_grad()

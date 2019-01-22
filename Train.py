@@ -54,7 +54,7 @@ dict_of_dataiterators = createDictOfDataIterators(dict_of_dataloaders)
 label_names = dict_of_dataiterators.keys()
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
-w= SummaryWriter('whale','subset2')
+w= SummaryWriter('whale','same_label')
 # w = SummaryWriter("debug")
 # use_cuda = True
 use_cuda = False
@@ -67,9 +67,10 @@ LR = 5e-3
 cos_period = 120
 drop_period = 450
 batch_size = batch_size
-epochs = 5
+epochs = 10
 
-optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
+# optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
+optimizer = optim.Adam(net.parameters(),lr= LR)
 scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
 criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 
@@ -171,7 +172,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("Back to 2 layers. Also added same batch count logging and increased drop period again")
+w.add_thought("I feel like most of what I have been trying will need to be tried again later b/c they arn't addressing the problem at hand. In any case, am increasing epoch to 10 and trying Adam to try to solve this SAME LABEL Loss issue")
 w.close()
 end = time()
 eval_end = time()

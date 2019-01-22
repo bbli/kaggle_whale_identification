@@ -46,27 +46,6 @@ def getProductOfTuple(torch_tensor):
 ########################
 
 
-class DoubleConvBlock(FunctionalModule):
-    def __init__(self,in_channels,out_channels,kernel_size,show=False,padding=0):
-        '''
-        Descriptions/Assumptions: Only pads the first conv block
-        Arguments: 
-        Returns: 
-        '''
-        super().__init__()
-        self.show = show
-        self.stacked_conv = nn.Sequential(
-                nn.Conv2d(in_channels,out_channels,kernel_size=kernel_size,padding=padding),
-                nn.BatchNorm2d(out_channels),
-                nn.ReLU(),
-
-                nn.Conv2d(out_channels,out_channels,kernel_size=kernel_size,padding=padding),
-                nn.BatchNorm2d(out_channels),
-                nn.ReLU(),
-                )
-    def _forward(self,x):
-        x = self.stacked_conv(x)
-        return x
 class ConvBlock(FunctionalModule):
     def __init__(self,in_channels,out_channels,kernel_size,stride=1,pool=True,show=False):
         super().__init__()
@@ -96,8 +75,16 @@ class ResNetDouble(FunctionalModule):
         Returns: 
         '''
         super().__init__()
-        self.double_conv = DoubleConvBlock(in_channels,out_channels,kernel_size,padding=padding)
         self.show = show
+        self.double_conv = nn.Sequential(
+                nn.Conv2d(in_channels,out_channels,kernel_size=kernel_size,padding=padding),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU(),
+
+                nn.Conv2d(out_channels,out_channels,kernel_size=kernel_size,padding=padding),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU(),
+                )
     def _forward(self,x):
         y = self.double_conv(x)
         return x+y

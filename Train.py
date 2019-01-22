@@ -78,7 +78,7 @@ criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 w.add_experiment_parameter("Learning Rate",LR)
 w.add_experiment_parameter("Batch Size",batch_size)
 # w.add_experiment_parameter("Cosine Period",cos_period)
-w.add_experiment_parameter("Epochs",epochs)
+# w.add_experiment_parameter("Epochs",epochs)
 # w.add_experiment_parameter("Drop Period",drop_period)
 ################ **Misc Variables** ##################
 count = 0
@@ -169,7 +169,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("Yeah, using relu before is actually better. Now changed adaptive pool down to (1,1) and extended dropping period")
+w.add_thought("Lowering adaptive pool to (1,1) improved by 2%. Now increasing hidden units in dense layer")
 w.close()
 end = time()
 eval_end = time()

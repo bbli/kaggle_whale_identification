@@ -129,7 +129,7 @@ class Net(FunctionalModule):
                 # nn.ReLU(),
                 )
 
-        self.fc1 = nn.Linear(256,30)
+        self.fc1 = nn.Linear(64,30)
         # self.fc1_batch = nn.BatchNorm1d(30)
         self.fc2 = nn.Linear(30,10)
         # self.fc_last = nn.Linear(100,1)

@@ -18,7 +18,7 @@ def cosine_drop(cos_period,explore_period,decay):
     factor = 1
     def f(episode):
         nonlocal factor
-        if episode!=0 and (episode %explore_period == 0) and factor>0.1:
+        if episode!=0 and (episode %explore_period == 0) and factor>0.2:
             factor = factor*decay
             # print("Dropped Factor to: ",factor)
         modulus = episode % cos_period
@@ -63,7 +63,7 @@ net = Net()
 net.to(device)
 net.train()
 
-LR = 5e-3
+LR = 8e-4
 cos_period = 160
 drop_period = 750
 batch_size = batch_size
@@ -174,7 +174,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("Realized my getDifferentLabelLoss was wrong. Switch back to one optimizer as Adam will step too much")
+w.add_thought("lowered learning rate to 8e-4 b/c cost exploded")
 w.close()
 end = time()
 eval_end = time()

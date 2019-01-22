@@ -65,6 +65,7 @@ def getSameLabelLoss(torch_tensor):
         delta_vec = getDeltaVec(output,torch_tensor)
         delta_mag = getMagnitude(delta_vec)
         loss = torch.pow(delta_mag,2)
+        # loss = delta_mag
         if i == 0:
             total_loss = loss
         else:

@@ -129,9 +129,9 @@ class Net(FunctionalModule):
                 # nn.ReLU(),
                 )
 
-        self.fc1 = nn.Linear(64,60)
+        self.fc1 = nn.Linear(64,15)
         # self.fc1_batch = nn.BatchNorm1d(30)
-        self.fc2 = nn.Linear(60,15)
+        # self.fc2 = nn.Linear(30,10)
         # self.fc_last = nn.Linear(100,1)
 
     # @property
@@ -145,9 +145,10 @@ class Net(FunctionalModule):
         x = self.features(x)
         x = x.view(x.shape[0],-1)
         
-        x = F.relu(self.fc1(x))
+        # x = F.relu(self.fc1(x))
+        x = self.fc1(x)
         # x = self.fc1_batch(x)
-        x = self.fc2(x)
+        # x = self.fc2(x)
         return x
 
 def Distance(output1,output2):

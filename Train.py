@@ -169,7 +169,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("Lowering adaptive pool to (1,1) improved by 2%. Now increasing hidden units in dense layer")
+w.add_thought("Decreased slightly -> Lowered back down and now trying just linear layer with not activations")
 w.close()
 end = time()
 eval_end = time()

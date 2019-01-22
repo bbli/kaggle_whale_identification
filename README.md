@@ -21,6 +21,8 @@
 > test whether that guys map5 code works
     * wait until code finishes then just manually calculate first 3
 
+* search for learning rate?
+
 * test if batch norm after relu works better 
 * if greater than 70% a label, make that the first label
     

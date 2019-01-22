@@ -64,15 +64,15 @@ net.to(device)
 net.train()
 
 LR = 5e-3
-cos_period = 120
-drop_period = 450
+cos_period = 160
+drop_period = 750
 batch_size = batch_size
 epochs = 10
 
 optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
 # optimizer = optim.Adam(net.parameters(),lr= LR)
 scheduler = LambdaLR(optimizer1,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
-criterion = nn.HingeEmbeddingLoss(margin = 8,reduction='none')
+criterion = nn.HingeEmbeddingLoss(margin = 6,reduction='none')
 
 
 # w.add_text("Hyperparameters","learning_rate: {} batch size: {} cosine period: {} drop period: {}".format(LR,batch_size,cos_period,drop_period))
@@ -172,7 +172,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("Back to SGD with higher cap on decay. increased margin and made output dimension smaller so net will do more pushing away")
+w.add_thought("Increased dim up to 6 and margin down to 6, as different loss was not improving")
 w.close()
 end = time()
 eval_end = time()

@@ -18,7 +18,7 @@ def cosine_drop(cos_period,explore_period,decay):
     factor = 1
     def f(episode):
         nonlocal factor
-        if episode!=0 and (episode %explore_period == 0) and factor>0.02:
+        if episode!=0 and (episode %explore_period == 0) and factor>0.05:
             factor = factor*decay
             # print("Dropped Factor to: ",factor)
         modulus = episode % cos_period
@@ -54,7 +54,7 @@ dict_of_dataiterators = createDictOfDataIterators(dict_of_dataloaders)
 label_names = dict_of_dataiterators.keys()
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
-w= SummaryWriter('whale','subset1')
+w= SummaryWriter('whale','subset2')
 # w = SummaryWriter("debug")
 # use_cuda = True
 use_cuda = False
@@ -64,8 +64,8 @@ net.to(device)
 net.train()
 
 LR = 5e-3
-cos_period = 45
-drop_period = 150
+cos_period = 120
+drop_period = 450
 batch_size = batch_size
 epochs = 5
 
@@ -107,11 +107,13 @@ for epoch in range(epochs):
         if len(same_img_batch) == 1:
             pass
         else:
+            w.add_scalar("Same Batch Count",same_img_batch.numpy().shape[0])
             same_img_batch = same_img_batch.to(device)
             outputs = net(same_img_batch)
             loss = getSameLabelLoss(outputs)
             BackpropAndUpdate(loss,optimizer,scheduler,w,net)
 
+            ## Log
             w.add_scalar("Same Loss",loss.item())
             print("Same Loss: ",loss.item())
         ################ ** Mostly Different Labels** ##################
@@ -149,7 +151,7 @@ for epoch in range(epochs):
     labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
 
     score = map_per_set(total_val_labels,labels_prediction_matrix)
-    w.add_scalar("Score",score)
+    w.add_scalar("Val Score",score)
 train_end = time()        
 
 ################ **Evaluating** ##################
@@ -157,7 +159,7 @@ eval_start = time()
 total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
 
 from sklearn.neighbors import NearestNeighbors
-neigh = NearestNeighbors(n_neighbors=6)
+neigh = NearestNeighbors(n_neighbors=10)
 neigh.fit(total_train_outputs)
 
 val_dataset = RandomDataSet(df,val_img_names,directory,transform)
@@ -169,7 +171,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("Decreased slightly -> Lowered back down and now trying just linear layer with not activations")
+w.add_thought("Back to 2 layers. Also added same batch count logging and increased drop period again")
 w.close()
 end = time()
 eval_end = time()

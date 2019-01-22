@@ -62,7 +62,7 @@ class DoubleConvBlock(FunctionalModule):
 
                 nn.Conv2d(out_channels,out_channels,kernel_size=kernel_size,padding=padding),
                 nn.BatchNorm2d(out_channels),
-                # nn.ReLU(),
+                nn.ReLU(),
                 )
     def _forward(self,x):
         x = self.stacked_conv(x)
@@ -100,7 +100,7 @@ class ResNetDouble(FunctionalModule):
         self.show = show
     def _forward(self,x):
         y = self.double_conv(x)
-        return F.relu(x+y)
+        return x+y
 
 class Net(FunctionalModule):
     def __init__(self):

@@ -169,7 +169,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("moved batch norm back to before concat")
+w.add_thought("moved relu back before concat")
 w.close()
 end = time()
 eval_end = time()

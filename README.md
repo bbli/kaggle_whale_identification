@@ -22,6 +22,7 @@
     * wait until code finishes then just manually calculate first 3
 
 * search for learning rate?
+* don't update if 0 loss
 
 * test if batch norm after relu works better 
 * if greater than 70% a label, make that the first label

@@ -70,9 +70,9 @@ batch_size = batch_size
 epochs = 10
 
 optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
-# optimizer = optim.Adam(net.parameters(),lr= LR)
-scheduler = LambdaLR(optimizer1,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
-criterion = nn.HingeEmbeddingLoss(margin = 6,reduction='none')
+optimizer2 = optim.Adam(net.parameters(),lr= LR)
+scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
+criterion = nn.HingeEmbeddingLoss(margin = 9,reduction='none')
 
 
 # w.add_text("Hyperparameters","learning_rate: {} batch size: {} cosine period: {} drop period: {}".format(LR,batch_size,cos_period,drop_period))
@@ -112,7 +112,7 @@ for epoch in range(epochs):
             same_img_batch = same_img_batch.to(device)
             outputs = net(same_img_batch)
             loss = getSameLabelLoss(outputs)
-            BackpropAndUpdate(loss,optimizer,scheduler,w,net)
+            BackpropAndUpdate(w,net,loss,optimizer2)
 
             ## Log
             w.add_scalar("Same Loss",loss.item())
@@ -130,7 +130,7 @@ for epoch in range(epochs):
         output2 = net(random_img_batch)
         targets = createTargets(label,random_label_batch).to(device)
         loss = getDifferentLabelLoss(output1,output2,targets,criterion)
-        BackpropAndUpdate(loss,optimizer,scheduler,w,net)
+        BackpropAndUpdate(w,net,loss,optimizer,scheduler)
 
         ##Log
         w.add_scalar("Different Loss",loss.item())
@@ -172,7 +172,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("Increased dim up to 6 and margin down to 6, as different loss was not improving")
+w.add_thought("Am now using two optimizers, Adam for same. Increased margin up to 9")
 w.close()
 end = time()
 eval_end = time()

@@ -105,11 +105,12 @@ def getDifferentLabelLoss(output1,output2,targets,criterion):
             total_loss = torch.cat((total_loss,loss),0)
         return total_loss.mean()
 
-def BackpropAndUpdate(loss,optimizer,scheduler,w,net):
+def BackpropAndUpdate(w,net,loss,optimizer,scheduler=None):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    scheduler.step()
+    if scheduler:
+        scheduler.step()
     ## Log
     # avg_grad_last = getAverageGradientValue(net.fc_last)
     # w.add_scalar("Avg Gradient of fc last",avg_grad_last)

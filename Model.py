@@ -124,7 +124,7 @@ class Net(FunctionalModule):
                 ResNetDouble(64,64,kernel_size=3,padding=1),
                 # nn.MaxPool2d(2),
 
-                nn.AdaptiveAvgPool2d((2,2))
+                nn.AdaptiveAvgPool2d((1,1))
                 # nn.Conv2d(128,1,kernel_size=1),
                 # nn.ReLU(),
                 )

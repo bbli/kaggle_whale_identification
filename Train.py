@@ -64,8 +64,8 @@ net.to(device)
 net.train()
 
 LR = 5e-3
-cos_period = 25
-drop_period = 70
+cos_period = 45
+drop_period = 150
 batch_size = batch_size
 epochs = 5
 
@@ -169,7 +169,7 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("moved relu back before concat")
+w.add_thought("Yeah, using relu before is actually better. Now changed adaptive pool down to (1,1) and extended dropping period")
 w.close()
 end = time()
 eval_end = time()

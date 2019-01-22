@@ -69,9 +69,9 @@ drop_period = 450
 batch_size = batch_size
 epochs = 10
 
-# optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
+optimizer1 = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
 optimizer = optim.Adam(net.parameters(),lr= LR)
-scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
+scheduler = LambdaLR(optimizer1,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
 criterion = nn.HingeEmbeddingLoss(margin = 5,reduction='none')
 
 

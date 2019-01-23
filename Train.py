@@ -32,7 +32,7 @@ resizer = ReSizer(200,350)
 image_scaler = ImageScalar(127.5,1)
 channel_mover = AxisMover(-1,0)
 tensor_converter = ToTensor()
-batch_size = 32
+batch_size = 16
 transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
 
 directory ='subset'
@@ -103,8 +103,9 @@ while epoch <epochs:
     img_count = 0
     label_count = 0
     one_img_labels = []
-    while img_count < 1.5*batch_size:
+    while img_count < 3*batch_size:
         same_img_batch, same_label_batch = next(same_img_batch_iterator)
+        same_img_batch = same_img_batch.to(device)
 
         ## Bookkeeping
         try:
@@ -121,8 +122,7 @@ while epoch <epochs:
             img_count += len(same_img_batch) 
             label_count +=1
 
-            outputs = same_img_batch.to(device)
-            outputs = net(outputs)
+            outputs = net(same_img_batch)
             label_loss = getSameLabelLoss(outputs)
 
             ## Bookkeeping
@@ -137,6 +137,8 @@ while epoch <epochs:
     print("Same Loss: ",total_loss.item())
 
     BackpropAndUpdate(w,net,total_loss,optimizer,scheduler)
+    del label_loss
+    del total_loss
     count += 1
 
     ################ ** Mostly Different Labels** ##################
@@ -149,8 +151,7 @@ while epoch <epochs:
         epoch +=1
 
     random_img_batch = random_img_batch.to(device)
-    total_same_output = total_same_img_batch.to(device)
-    total_same_output = net(total_same_output)
+    total_same_output = net(total_same_img_batch)
     random_output = net(random_img_batch)
 
     for idx,out in enumerate(total_same_output):
@@ -176,8 +177,13 @@ while epoch <epochs:
         pass
     else:
         BackpropAndUpdate(w,net,total_loss2,optimizer,scheduler)
+        del total_loss2
         count += 1
 
+    del random_img_batch
+    del targets
+    del same_img_batch
+    del total_same_img_batch
     ##Log
     # percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
     # w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
@@ -199,6 +205,11 @@ while epoch <epochs:
 
         score = map_per_set(total_val_labels,labels_prediction_matrix)
         w.add_scalar("Val Score",score)
+
+        del total_train_outputs
+        del total_train_labels
+        del total_val_labels
+        del total_val_outputs
 train_end = time()        
 
 ################ **Evaluating** ##################

@@ -86,7 +86,7 @@ class ImageScalar():
         self.factor = factor
         self.shift = shift
     def __call__(self,image):
-        return image/self.factor - shift
+        return image/self.factor - self.shift
 
 class Standarize():
     def fit(self,dataset):

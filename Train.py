@@ -65,7 +65,7 @@ net = Net()
 net.to(device)
 net.train()
 
-LR = 2e-3
+LR = 8e-4
 cos_period = 160
 drop_period = 900
 batch_size = batch_size
@@ -122,7 +122,7 @@ for epoch in range(epochs):
 
             ## Making sure we don't over fit new whale
             if label == 'new_whale':
-                loss = loss/10
+                loss = loss/5
             BackpropAndUpdate(w,net,loss,optimizer,scheduler)
 
         ################ ** Mostly Different Labels** ##################

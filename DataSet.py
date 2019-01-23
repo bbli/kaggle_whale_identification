@@ -82,10 +82,11 @@ class AxisMover():
         return np.moveaxis(image,-1,0)
 
 class ImageScalar():
-    def __init__(self,factor):
+    def __init__(self,factor,shift=0):
         self.factor = factor
+        self.shift = shift
     def __call__(self,image):
-        return image/self.factor
+        return image/self.factor - shift
 
 class Standarize():
     def fit(self,dataset):
@@ -188,17 +189,28 @@ class LabelDataSet(Dataset):
 
 if __name__ == '__main__':
     resizer = ReSizer(200,350)
-    image_scaler = ImageScalar(255)
+    image_scaler = ImageScalar(127.5,1)
     channel_mover = AxisMover(-1,0)
     tensor_converter = ToTensor()
 
-    directory_name ='subset'
-    df = pd.read_csv(directory_name+'/train.csv')
+    directory ='subset'
+    df = pd.read_csv(directory+'/train.csv')
+    df.index = df['Image']
+    img_names = getListOfImageNames(directory+'/data')
 
     # preprocess_transform = Compose([resizer])
-    preprocess_dataset = RandomDataSet(directory_name)
+    # preprocess_dataset = RandomDataSet(df,img_names,directory,)
 
     train_transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
-    train_dataset = RandomDataSet(directory_name,transform=train_transform)
-    train_loader = DataLoader(train_dataset, batch_size=10)
-    img,label = preprocess_dataset[1]
+    train_dataset = RandomDataSet(df,img_names,directory,transform=train_transform)
+    total_mean = 0
+    total_std = 0
+    count = 0
+    for img,label in train_dataset:
+        count += 1
+        mean = img.numpy().mean()
+        # total_mean = 0.9*total_mean + 0.1*mean
+        total_mean += mean
+        std = img.numpy().std()
+        total_std = 0.9*total_std + 0.1*std
+    total_mean = total_mean/count

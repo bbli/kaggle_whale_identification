@@ -24,6 +24,7 @@
 
 * Ahh, so the singles have been pushed into the new whale space
     * same label favors new whale by n^2 rather than just n -> too biased
+    * divid by standard deviation, b/c everything probably the same
 
 * second optimizer for Same with lower learning rate so we don't spike during outliers
 * if greater than 70% a label, make that the first label

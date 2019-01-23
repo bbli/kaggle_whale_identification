@@ -29,7 +29,7 @@ def cosine_drop(cos_period,explore_period,decay):
 ################ **Loading DataSet** ##################
 start = time()
 resizer = ReSizer(200,350)
-image_scaler = ImageScalar(255)
+image_scaler = ImageScalar(127.5,1)
 channel_mover = AxisMover(-1,0)
 tensor_converter = ToTensor()
 batch_size = 32
@@ -55,7 +55,7 @@ label_names = dict_of_dataiterators.keys()
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
 w= SummaryWriter('whale','same_label')
-w.add_thought("Realized one image labels were being swallowed by the new_whale label. Now have two optimizers to lower attraction and loss multipler on one image labels")
+w.add_thought("two optimizers didn't work that well, as same loss went up to the hundreds -> change back and instead add divided the loss when the label is new_whale. ALso changed scaling to 127.5")
 # w = SummaryWriter("debug")
 
 # use_cuda = True
@@ -65,18 +65,16 @@ net = Net()
 net.to(device)
 net.train()
 
-LR = 8e-4
+LR = 2e-3
 cos_period = 160
-# drop_period = 750
+drop_period = 900
 batch_size = batch_size
 epochs = 10
 
 ## lower so we don't spike from new_whale and collapse everything to new whale
-optimizer_same = optim.SGD(net.parameters(),lr = LR/4,momentum=0.7)
-scheduler_same = LambdaLR(optimizer_same,lr_lambda=cosine(cos_period))
+optimizer= optim.SGD(net.parameters(),lr = LR,momentum=0.8)
+scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
 
-optimizer_different = optim.SGD(net.parameters(),lr = LR,momentum=0.85)
-scheduler_different = LambdaLR(optimizer_different,lr_lambda=cosine(cos_period))
 criterion = nn.HingeEmbeddingLoss(margin = 9,reduction='none')
 
 
@@ -117,11 +115,16 @@ for epoch in range(epochs):
             same_img_batch = same_img_batch.to(device)
             outputs = net(same_img_batch)
             loss = getSameLabelLoss(outputs)
-            BackpropAndUpdate(w,net,loss,optimizer_same,scheduler_same)
 
             ## Log
             w.add_scalar("Same Loss",loss.item())
             print("Same Loss: ",loss.item())
+
+            ## Making sure we don't over fit new whale
+            if label == 'new_whale':
+                loss = loss/10
+            BackpropAndUpdate(w,net,loss,optimizer,scheduler)
+
         ################ ** Mostly Different Labels** ##################
         try:
             random_img_batch, random_label_batch = next(random_img_iterator)
@@ -147,7 +150,7 @@ for epoch in range(epochs):
         if loss == 0:
             pass
         else:
-            BackpropAndUpdate(w,net,loss,optimizer_different,scheduler_different)
+            BackpropAndUpdate(w,net,loss,optimizer,scheduler)
 
         ##Log
         percentage_of_different_labels = getPercentageOfDifferentLabels(targets)

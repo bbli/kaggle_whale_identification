@@ -52,6 +52,7 @@ dict_of_images = createDictOfImagesForEachLabel(df,train_img_names)
 dict_of_dataloaders = createDictOfDataLoaders(dict_of_images,batch_size,directory,transform)
 dict_of_dataiterators = createDictOfDataIterators(dict_of_dataloaders)
 label_names = dict_of_dataiterators.keys()
+same_img_batch_iterator = generateSameImgBatch(dict_of_dataloaders,dict_of_dataiterators,label_names)
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
 w= SummaryWriter('whale','same_label')
@@ -69,7 +70,7 @@ LR = 6e-4
 cos_period = 160
 drop_period = 900
 batch_size = batch_size
-epochs = 10
+epochs = 5
 
 ## lower so we don't spike from new_whale and collapse everything to new whale
 optimizer= optim.SGD(net.parameters(),lr = LR,momentum=0.8)
@@ -85,7 +86,6 @@ w.add_experiment_parameter("Batch Size",batch_size)
 # w.add_experiment_parameter("Epochs",epochs)
 # w.add_experiment_parameter("Drop Period",drop_period)
 ################ **Misc Variables** ##################
-count = 0
 train_start = time()
 # flag = False
 # explore_count = 0
@@ -93,87 +93,112 @@ train_start = time()
 # total_train_time = 0
 
 ################ **Training Code** ##################
-for epoch in range(epochs):
-    # print(net.fc2.weight.grad)
+epoch=0
+count = 0
+while epoch <epochs:
     print("Current epoch: ",epoch)
+    # print(net.fc2.weight.grad)
     net.train()
 
+    img_count = 0
+    label_count = 0
+    one_img_labels = []
+    while img_count < 1.5*batch_size:
+        same_img_batch, same_label_batch = next(same_img_batch_iterator)
 
-    for label in label_names:
-        count += 1
-        ################ **Same Labels** ##################
-        ## Generate next training images
+        ## Bookkeeping
         try:
-            same_img_batch = next(dict_of_dataiterators[label])
-        except StopIteration:
-            dict_of_dataiterators[label] = iter(dict_of_dataloaders[label])
-            same_img_batch = next(dict_of_dataiterators[label])
+            total_same_img_batch = torch.cat((total_same_img_batch,same_img_batch),0)
+            total_same_label_batch = total_same_label_batch + same_label_batch
+        except NameError:
+            total_same_label_batch = same_label_batch
+            total_same_img_batch = same_img_batch
 
         ## No point in comparing with itself
         if len(same_img_batch) == 1:
-            pass
+            one_img_labels.append(same_label_batch[0])
         else:
-            w.add_scalar("Same Batch Count",same_img_batch.numpy().shape[0])
+            img_count += len(same_img_batch) 
+            label_count +=1
+
             same_img_batch = same_img_batch.to(device)
             outputs = net(same_img_batch)
-            loss = getSameLabelLoss(outputs)
+            label_loss = getSameLabelLoss(outputs)
 
-            ## Log
-            w.add_scalar("Same Loss",loss.item())
-            print("Same Loss: ",loss.item())
+            ## Bookkeeping
+            if label_count == 1:
+                total_loss = label_loss
+            else:
+                total_loss = total_loss+label_loss
 
-            ## Making sure we don't over fit new whale
-            if label == 'new_whale':
-                loss = loss/5
-            BackpropAndUpdate(w,net,loss,optimizer,scheduler)
+    total_loss = total_loss/label_count
+    ## Log
+    w.add_scalar("Same Loss",total_loss.item())
+    print("Same Loss: ",total_loss.item())
 
-        ################ ** Mostly Different Labels** ##################
-        try:
-            random_img_batch, random_label_batch = next(random_img_iterator)
-        except StopIteration:
-            random_img_iterator = iter(random_loader)
-            random_img_batch, random_label_batch = next(random_img_iterator)
+    BackpropAndUpdate(w,net,total_loss,optimizer,scheduler)
+    count += 1
 
-        random_img_batch = random_img_batch.to(device)
-        same_img_batch = same_img_batch.to(device)
-        output1 = net(same_img_batch)
-        output2 = net(random_img_batch)
-        targets = createTargets(label,random_label_batch).to(device)
-        loss = getDifferentLabelLoss(output1,output2,targets,criterion)
+    ################ ** Mostly Different Labels** ##################
+    ## Restart a dataloader if exhausted
+    try:
+        random_img_batch, random_label_batch = next(random_img_iterator)
+    except StopIteration:
+        random_img_iterator = iter(random_loader)
+        random_img_batch, random_label_batch = next(random_img_iterator)
+        epoch +=1
 
-        #Log
-        w.add_scalar("Different Loss",loss.item())
-        print("Different Loss: ",loss.item())
+    random_img_batch = random_img_batch.to(device)
+    total_same_img_batch = total_same_img_batch.to(device)
+    total_same_output = net(total_same_img_batch)
+    random_output = net(random_img_batch)
+
+    for idx,out in enumerate(total_same_output):
+        targets = createTargets(total_same_label_batch[idx],random_label_batch).to(device)
+        loss_per_output = getDifferentLabelLoss(out,random_output,targets,criterion)
 
         ## Making sure one sample labels don't get swallowed by new whale label
-        if len(same_img_batch)==1:
-            loss = 10*loss
+        if total_same_label_batch[idx] in one_img_labels:
+            loss_per_output = loss_per_output*5
 
-        if loss == 0:
-            pass
+        ## Bookkeeping
+        if idx == 0:
+           total_loss2 = loss_per_output 
         else:
-            BackpropAndUpdate(w,net,loss,optimizer,scheduler)
+            total_loss2 = total_loss2 + loss_per_output
+    total_loss2 = total_loss2/len(total_same_output)
 
-        ##Log
-        percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
-        w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
-    ################ **Evaluating after every epoch** ##################
-    net.eval()
-    total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
+    #Log
+    w.add_scalar("Different Loss",total_loss2.item())
+    print("Different Loss: ",total_loss2.item())
 
-    from sklearn.neighbors import NearestNeighbors
-    neigh = NearestNeighbors(n_neighbors=6)
-    neigh.fit(total_train_outputs)
+    if total_loss2 == 0:
+        pass
+    else:
+        BackpropAndUpdate(w,net,total_loss2,optimizer,scheduler)
+        count += 1
 
-    val_dataset = RandomDataSet(df,val_img_names,directory,transform)
-    val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
-    total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,net,device)
+    ##Log
+    # percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
+    # w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
+    ################ **Evaluating after a certain period** ##################
+    if count%250 == 0:
+        net.eval()
+        total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
 
-    distances,indices = neigh.kneighbors(total_val_outputs)
-    labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
+        from sklearn.neighbors import NearestNeighbors
+        neigh = NearestNeighbors(n_neighbors=6)
+        neigh.fit(total_train_outputs)
 
-    score = map_per_set(total_val_labels,labels_prediction_matrix)
-    w.add_scalar("Val Score",score)
+        val_dataset = RandomDataSet(df,val_img_names,directory,transform)
+        val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
+        total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,net,device)
+
+        distances,indices = neigh.kneighbors(total_val_outputs)
+        labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
+
+        score = map_per_set(total_val_labels,labels_prediction_matrix)
+        w.add_scalar("Val Score",score)
 train_end = time()        
 
 ################ **Evaluating** ##################

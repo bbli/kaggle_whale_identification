@@ -60,6 +60,19 @@ def createDictOfDataIterators(dict_of_dataloaders):
         dict_of_dataiterators[label] = iter(dict_of_dataloaders[label])
     return dict_of_dataiterators
 ########################
+def generateSameImgBatch(dict_of_dataloaders,dict_of_dataiterators,label_names):
+    while True:
+        for label in label_names:
+            ################ **Same Labels** ##################
+            ## Generate next training images
+            try:
+                same_img_batch = next(dict_of_dataiterators[label])
+            except StopIteration:
+                dict_of_dataiterators[label] = iter(dict_of_dataloaders[label])
+                same_img_batch = next(dict_of_dataiterators[label])
+
+            yield same_img_batch, [label for x in same_img_batch]
+########################
 def getSameLabelLoss(torch_tensor):
     for i,output in enumerate(torch_tensor):
         delta_vec = getDeltaVec(output,torch_tensor)
@@ -96,15 +109,16 @@ def createTargets(label,label_batch):
     return torch.from_numpy(targets_list).double()
 
 def getDifferentLabelLoss(output1,output2,targets,criterion):
-    for i,output in enumerate(output1):
-        delta_vec = getDeltaVec(output,output2)
-        delta_mag = getMagnitude(delta_vec)
-        loss = criterion(delta_mag,targets)
-        loss = torch.pow(loss,2)
-        if i == 0:
-            total_loss = loss
-        else:
-            total_loss = torch.cat((total_loss,loss),0)
+    '''
+    Descriptions/Assumptions: Assumes output1 is a 1D tensor
+    Arguments: 
+    Returns: 
+    '''
+    delta_vec = getDeltaVec(output1,output2)
+    delta_mag = getMagnitude(delta_vec)
+    loss = criterion(delta_mag,targets)
+    loss = torch.pow(loss,2)
+    total_loss = loss
     return total_loss.mean()
 
 def BackpropAndUpdate(w,net,loss,optimizer,scheduler=None):

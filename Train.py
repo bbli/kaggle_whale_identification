@@ -121,8 +121,8 @@ while epoch <epochs:
             img_count += len(same_img_batch) 
             label_count +=1
 
-            same_img_batch = same_img_batch.to(device)
-            outputs = net(same_img_batch)
+            outputs = same_img_batch.to(device)
+            outputs = net(outputs)
             label_loss = getSameLabelLoss(outputs)
 
             ## Bookkeeping
@@ -149,8 +149,8 @@ while epoch <epochs:
         epoch +=1
 
     random_img_batch = random_img_batch.to(device)
-    total_same_img_batch = total_same_img_batch.to(device)
-    total_same_output = net(total_same_img_batch)
+    total_same_output = total_same_img_batch.to(device)
+    total_same_output = net(total_same_output)
     random_output = net(random_img_batch)
 
     for idx,out in enumerate(total_same_output):

@@ -55,7 +55,9 @@ label_names = dict_of_dataiterators.keys()
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
 w= SummaryWriter('whale','same_label')
+w.add_thought("Realized one image labels were being swallowed by the new_whale label. Now have two optimizers to lower attraction and loss multipler on one image labels")
 # w = SummaryWriter("debug")
+
 # use_cuda = True
 use_cuda = False
 device = torch.device("cuda" if  use_cuda else "cpu")
@@ -65,12 +67,16 @@ net.train()
 
 LR = 8e-4
 cos_period = 160
-drop_period = 750
+# drop_period = 750
 batch_size = batch_size
 epochs = 10
 
-optimizer = optim.SGD(net.parameters(),lr = LR,momentum=0.8)
-scheduler = LambdaLR(optimizer,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
+## lower so we don't spike from new_whale and collapse everything to new whale
+optimizer_same = optim.SGD(net.parameters(),lr = LR/4,momentum=0.7)
+scheduler_same = LambdaLR(optimizer_same,lr_lambda=cosine(cos_period))
+
+optimizer_different = optim.SGD(net.parameters(),lr = LR,momentum=0.85)
+scheduler_different = LambdaLR(optimizer_different,lr_lambda=cosine(cos_period))
 criterion = nn.HingeEmbeddingLoss(margin = 9,reduction='none')
 
 
@@ -111,7 +117,7 @@ for epoch in range(epochs):
             same_img_batch = same_img_batch.to(device)
             outputs = net(same_img_batch)
             loss = getSameLabelLoss(outputs)
-            BackpropAndUpdate(w,net,loss,optimizer,scheduler)
+            BackpropAndUpdate(w,net,loss,optimizer_same,scheduler_same)
 
             ## Log
             w.add_scalar("Same Loss",loss.item())
@@ -129,14 +135,21 @@ for epoch in range(epochs):
         output2 = net(random_img_batch)
         targets = createTargets(label,random_label_batch).to(device)
         loss = getDifferentLabelLoss(output1,output2,targets,criterion)
+
+        #Log
+        w.add_scalar("Different Loss",loss.item())
+        print("Different Loss: ",loss.item())
+
+        ## Making sure one sample labels don't get swallowed by new whale label
+        if len(same_img_batch)==1:
+            loss = 10*loss
+
         if loss == 0:
             pass
         else:
-            BackpropAndUpdate(w,net,loss,optimizer,scheduler)
+            BackpropAndUpdate(w,net,loss,optimizer_different,scheduler_different)
 
         ##Log
-        w.add_scalar("Different Loss",loss.item())
-        print("Different Loss: ",loss.item())
         percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
         w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
     ################ **Evaluating after every epoch** ##################
@@ -174,7 +187,6 @@ labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_label
 
 final_score = map_per_set(total_val_labels,labels_prediction_matrix)
 w.add_experiment_parameter("Score",final_score)
-w.add_thought("lowered learning rate to 8e-4 b/c cost exploded")
 w.close()
 end = time()
 eval_end = time()

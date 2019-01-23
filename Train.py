@@ -55,8 +55,8 @@ label_names = dict_of_dataiterators.keys()
 same_img_batch_iterator = generateSameImgBatch(dict_of_dataloaders,dict_of_dataiterators,label_names)
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
-w= SummaryWriter('whale','same_label')
-w.add_thought("Added dropout b/c of low loss and poor accuracy. ALso added net.eval() for dropout and batch norm")
+w= SummaryWriter('whale','same_label2')
+w.add_thought("same label gradient updates are now with respect to multiple labels")
 # w = SummaryWriter("debug")
 
 # use_cuda = True

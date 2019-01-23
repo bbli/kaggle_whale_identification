@@ -118,6 +118,7 @@ class Net(FunctionalModule):
 
         self.fc1 = nn.Linear(64,25)
         # self.fc1_batch = nn.BatchNorm1d(30)
+        self.fc1_dropout = nn.Dropout(0.3)
         self.fc2 = nn.Linear(25,6)
         # self.fc_last = nn.Linear(100,1)
 
@@ -133,6 +134,7 @@ class Net(FunctionalModule):
         x = x.view(x.shape[0],-1)
         
         x = F.relu(self.fc1(x))
+        x = self.fc1_dropout(x)
         x = self.fc2(x)
         return x
 

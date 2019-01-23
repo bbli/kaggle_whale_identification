@@ -55,7 +55,7 @@ label_names = dict_of_dataiterators.keys()
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
 w= SummaryWriter('whale','same_label')
-w.add_thought("two optimizers didn't work that well, as same loss went up to the hundreds -> change back and instead add divided the loss when the label is new_whale. ALso changed scaling to 127.5")
+w.add_thought("Added dropout b/c of low loss and poor accuracy. ALso added net.eval() for dropout and batch norm")
 # w = SummaryWriter("debug")
 
 # use_cuda = True
@@ -96,6 +96,8 @@ train_start = time()
 for epoch in range(epochs):
     # print(net.fc2.weight.grad)
     print("Current epoch: ",epoch)
+    net.train()
+
 
     for label in label_names:
         count += 1
@@ -156,6 +158,7 @@ for epoch in range(epochs):
         percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
         w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
     ################ **Evaluating after every epoch** ##################
+    net.eval()
     total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
 
     from sklearn.neighbors import NearestNeighbors
@@ -175,6 +178,7 @@ train_end = time()
 
 ################ **Evaluating** ##################
 eval_start = time()
+net.eval()
 total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
 
 from sklearn.neighbors import NearestNeighbors

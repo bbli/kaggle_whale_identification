@@ -22,13 +22,16 @@
     * wait until code finishes then just manually calculate first 3
 > don't update if 0 loss
 
+* log percentage on each of the top 5
+## Thoughts
+
 * Ahh, so the singles have been pushed into the new whale space
     * same label favors new whale by n^2 rather than just n -> too biased
     * divid by standard deviation, b/c everything probably the same
 
-* second optimizer for Same with lower learning rate so we don't spike during outliers
 * if greater than 70% a label, make that the first label
 * take first layer of resnet
+
 * data augmentation + longer train time
 * additive data emphasis feedback at end of each epoch
 
@@ -46,5 +49,6 @@
 * hypertune num of nearest neighbors
     
 ## What I have learned
-* Dimension of output matters
+* Remember that I don't need x^i to see all pictures, but rather representatives
 * all pairwise matters -> wrong code would never improve different loss probably b/c it wasn't pushing the label ball away from other points
+* Dimension of output matters -> same loss wouldn't improve until I brought it down

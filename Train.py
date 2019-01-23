@@ -65,7 +65,7 @@ net = Net()
 net.to(device)
 net.train()
 
-LR = 8e-4
+LR = 6e-4
 cos_period = 160
 drop_period = 900
 batch_size = batch_size

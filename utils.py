@@ -81,8 +81,9 @@ def getDeltaVec(output,torch_tensor):
     '''
     return torch.abs(torch_tensor-output[np.newaxis,:])
 def getMagnitude(tensor):
-    tensor = torch.sqrt(torch.sum(torch.pow(tensor,2)+1e-7,dim=1))
-    return tensor
+    tensor = tensor.view(tensor.shape[0],-1)
+    delta_mag = torch.norm(tensor,p=2,dim=1)
+    return delta_mag
 ########################
 def createTargets(label,label_batch):
     targets_list = []

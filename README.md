@@ -29,6 +29,8 @@
     * same label favors new whale by n^2 rather than just n -> too biased
     * divid by standard deviation, b/c everything probably the same
 
+* I believe same label updates is the reason the random outputs look the same, as the other points get carried along for the ride
+
 * if greater than 70% a label, make that the first label
 * take first layer of resnet
 

@@ -4,7 +4,6 @@ import cv2
 from DataSet import *
 from math import cos,pi
 from more_itertools import unique_everseen
-from collections import Counter
 import numpy as np
 import torch
 
@@ -19,6 +18,17 @@ def cosine(period):
         return 0.5*(1.1+cos(pi*modulus/period))
     return f
 
+def cosine_drop(cos_period,explore_period,decay):
+    factor = 1
+    def f(episode):
+        nonlocal factor
+        if episode!=0 and (episode %explore_period == 0) and factor>0.2:
+            factor = factor*decay
+            # print("Dropped Factor to: ",factor)
+        modulus = episode % cos_period
+        return factor*0.5*(1.1+cos(pi*modulus/cos_period))
+    return f
+########################
 def getTrainValSplit(img_names):
     np.random.seed(10)
     local = np.array(img_names)
@@ -212,5 +222,4 @@ def map_per_set(labels, predictions):
     score : double
     """
     list_of_scores = [map_per_image(l, p) for l,p in zip(labels, predictions)]
-    scores_counter = Counter(list_of_scores) 
     return np.mean(list_of_scores),list_of_scores 

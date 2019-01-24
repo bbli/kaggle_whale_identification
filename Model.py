@@ -90,25 +90,25 @@ class ResNetDouble(FunctionalModule):
         return x+y
 
 class Net(FunctionalModule):
-    def __init__(self):
+    def __init__(self,output_dim,feature_maps):
         super().__init__()
-        self.conv1 = ConvBlock(3, 24, kernel_size=8,stride=2)
+        self.conv1 = ConvBlock(3, feature_maps, kernel_size=8,stride=2)
         self.features = nn.Sequential(
                 self.conv1,
                 nn.MaxPool2d(2),
 
-                ConvBlock(24,32,kernel_size=3),
+                ConvBlock(feature_maps,feature_maps,kernel_size=3),
                 nn.MaxPool2d(2),
 
-                ResNetDouble(32,32,kernel_size=3,padding=1),
+                ResNetDouble(feature_maps,feature_maps,kernel_size=3,padding=1),
 
-                ResNetDouble(32,32,kernel_size=3,padding=1),
+                ResNetDouble(feature_maps,feature_maps,kernel_size=3,padding=1),
                 nn.MaxPool2d(2),
 
-                ConvBlock(32,64,kernel_size=1),
-                ResNetDouble(64,64,kernel_size=3,padding=1),
+                ConvBlock(feature_maps,2*feature_maps,kernel_size=1),
+                ResNetDouble(2*feature_maps,2*feature_maps,kernel_size=3,padding=1),
 
-                ResNetDouble(64,64,kernel_size=3,padding=1),
+                ResNetDouble(2*feature_maps,2*feature_maps,kernel_size=3,padding=1),
                 # nn.MaxPool2d(2),
 
                 nn.AdaptiveAvgPool2d((1,1))
@@ -117,10 +117,10 @@ class Net(FunctionalModule):
                 )
 
         # self.fc1_dropout = nn.Dropout(0.4)
-        self.fc1 = nn.Linear(64,30)
+        self.fc1 = nn.Linear(2*feature_maps,30)
         # self.fc1_batch = nn.BatchNorm1d(30)
         self.fc2_dropout = nn.Dropout(0.3)
-        self.fc2 = nn.Linear(30,6)
+        self.fc2 = nn.Linear(30,output_dim)
         # self.fc_last = nn.Linear(100,1)
 
     # @property

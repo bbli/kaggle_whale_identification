@@ -3,6 +3,7 @@ import cv2
 # from numpy.random import permutation
 from DataSet import *
 from math import cos,pi
+from more_itertools import unique_everseen
 import numpy as np
 import torch
 
@@ -167,6 +168,8 @@ def convertIndicesToTrainLabels(indices,total_train_labels):
     labels_matrix = []
     for index_predictions in indices:
         labels_predictions = [total_train_labels[idx] for idx in index_predictions]
+        labels_predictions = unique_everseen(labels_predictions)
+        labels_predictions = list(labels_predictions)
         labels_matrix.append(labels_predictions)
     return labels_matrix
 

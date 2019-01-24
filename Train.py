@@ -41,7 +41,7 @@ print("Percentage of new whales in val set: ",percentage_new_whale)
 # image_scaler = ImageScalar(127.5,1)
 channel_mover = AxisMover(-1,0)
 tensor_converter = ToTensor()
-batch_size = 40
+batch_size = 32
 # transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
 
 ## All transform that subclass BasicTransform will have default 0.5 probability of activiating
@@ -69,7 +69,7 @@ same_img_batch_iterator = generateSameImgBatch(dict_of_dataloaders,dict_of_datai
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
 w= SummaryWriter('whale','data_augment')
-w.add_thought("lots of code. added image augmentation and increased epochs according")
+w.add_thought("changed back to logging val after each epoch, and now return unique labels from  convertIndicesToTrainLabels")
 # w = SummaryWriter("debug")
 
 # use_cuda = True
@@ -81,9 +81,9 @@ net.train()
 
 LR = 6e-4
 cos_period = 160
-drop_period = 900
+drop_period = 600
 batch_size = batch_size
-epochs = 32
+epochs = 24
 
 ## lower so we don't spike from new_whale and collapse everything to new whale
 optimizer= optim.SGD(net.parameters(),lr = LR,momentum=0.8)
@@ -108,7 +108,7 @@ val_score_list = []
 
 ################ **Training Code** ##################
 epoch=0
-count = 0
+new_epoch = False
 while epoch <epochs:
     print("Current epoch: ",epoch)
     # print(net.fc2.weight.grad)
@@ -153,7 +153,6 @@ while epoch <epochs:
     BackpropAndUpdate(w,net,total_loss,optimizer,scheduler)
     del label_loss
     del total_loss
-    count += 1
 
     ################ ** Mostly Different Labels** ##################
     ## Restart a dataloader if exhausted
@@ -163,6 +162,7 @@ while epoch <epochs:
         random_img_iterator = iter(random_loader)
         random_img_batch, random_label_batch = next(random_img_iterator)
         epoch +=1
+        new_epoch = True
 
     random_img_batch = random_img_batch.to(device)
     total_same_output = net(total_same_img_batch)
@@ -192,7 +192,6 @@ while epoch <epochs:
     else:
         BackpropAndUpdate(w,net,total_loss2,optimizer,scheduler)
         del total_loss2
-        count += 1
 
     del random_img_batch
     del targets
@@ -202,12 +201,12 @@ while epoch <epochs:
     # percentage_of_different_labels = getPercentageOfDifferentLabels(targets)
     # w.add_scalar("Percentage of Different Labels",percentage_of_different_labels)
     ################ **Evaluating after a certain period** ##################
-    if count%250 == 0:
+    if new_epoch == True:
         net.eval()
         total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,net,device)
 
         from sklearn.neighbors import NearestNeighbors
-        neigh = NearestNeighbors(n_neighbors=6)
+        neigh = NearestNeighbors(n_neighbors=10)
         neigh.fit(total_train_outputs)
 
         val_dataset = RandomDataSet(df,val_img_names,directory,aug_transform=aug_transform,post_transform=post_transform)
@@ -219,7 +218,8 @@ while epoch <epochs:
 
         score = map_per_set(total_val_labels,labels_prediction_matrix)
         val_score_list.append(score)
-        w.add_scalar("Val Score",score)
+        w.add_scalar("Val Score",float(score))
+        new_epoch = False
 
         del total_train_outputs
         del total_train_labels

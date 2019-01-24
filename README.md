@@ -31,9 +31,10 @@
 > I believe same label updates is the reason the random outputs look the same, as the other points get carried along for the ride
     * How to check if code is correct?
 
-* data augmentation + longer train time
+> data augmentation + longer train time
 * if greater than 70% a label, make that the first label
-* take first layer of resnet
+    * also get statistics on prediction
+* take first layer of resnet -> memory issues?
 
 * additive data emphasis feedback at end of each epoch
 

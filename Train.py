@@ -238,19 +238,20 @@ def trainModel(feature_maps,margin,output_dim,same_factor):
     distances,indices = neigh.kneighbors(total_val_outputs)
     labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
 
-    final_score,list_of_scores = map_per_set(total_val_labels,labels_prediction_matrix)
+    final_mean_score,list_of_scores = map_per_set(total_val_labels,labels_prediction_matrix)
     for score in list_of_scores:
         w.add_histogram("Score Frequency",score)
-    w.add_experiment_parameter("Score",final_score)
+    w.add_experiment_parameter("Score",final_mean_score)
     w.close()
     end = time()
     eval_end = time()
     print("Time elapsed: ",end-start)
     print("Train time: ",train_end -train_start)
     print("Eval time: ",eval_end-eval_start)
-    return final_score
+    return final_mean_score,Counter(list_of_scores)
 
-final_scores_list = {}
+final_mean_scores_dict = {}
+final_score_frequency_dict = {}
 feature_maps_list = [32,16,64]
 margin = [1,5,10,20]
 output_dim_list = [4,7,12,20]
@@ -259,7 +260,8 @@ for fm in feature_maps_list:
     for m in margin:
         for dim in output_dim_list:
             for sf in same_factor_list:
-                final_score = trainModel(fm,m,dim,sf)
+                final_mean_score,score_frequency_dict = trainModel(fm,m,dim,sf)
                 string = str(fm)+'_'+str(m)+'_'+str(dim)+'_'+str(sf)
-                final_scores_list[string] = final_score
-                print("Score for "+string+": ",final_score)
+                final_mean_scores_dict[string] = final_mean_score
+                print("Score for "+string+": ",final_mean_score)
+                final_score_frequency_dict[string] = score_frequency_dict

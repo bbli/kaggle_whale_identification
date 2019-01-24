@@ -25,32 +25,37 @@
 * log percentage on each of the top 5
 ## Thoughts
 
-* Ahh, so the singles have been pushed into the new whale space
+> Ahh, so the singles have been pushed into the new whale space
     * same label favors new whale by n^2 rather than just n -> too biased
 
 > I believe same label updates is the reason the random outputs look the same, as the other points get carried along for the ride
     * How to check if code is correct?
 
 > data augmentation + longer train time
-* if greater than 70% a label, make that the first label
+> get unique labels
     * also get statistics on prediction
-* take first layer of resnet -> memory issues?
 
 * additive data emphasis feedback at end of each epoch
 
-* test if batch norm after relu works better 
     
 
 
-* learn data augmentation library -> look at the example on Kaggle
+> learn data augmentation library -> look at the example on Kaggle
 * look at test set distribution
 
+* test if batch norm after relu works better 
 * test if having more fully connected layers help 
     * perhaps dimension is too high
 * test whether compare pairwise rather than all n^2 is sufficent
 * hypertune margin parameter
 * hypertune num of nearest neighbors
-    
+* cross entropy?
+* take first layer of resnet -> memory issues?
+* architecture(since my net only takes one input in)    
+* loss weight(pairwise instead of label)
+* use that guys phash code
+* remove new whale and one image labels
+
 ## What I have learned
 * Remember that I don't need x^i to see all pictures, but rather representatives
 * all pairwise matters -> wrong code would never improve different loss probably b/c it wasn't pushing the label ball away from other points

@@ -68,7 +68,7 @@ label_names = dict_of_dataiterators.keys()
 same_img_batch_iterator = generateSameImgBatch(dict_of_dataloaders,dict_of_dataiterators,label_names)
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
-w= SummaryWriter('whale','data_augment')
+w= SummaryWriter('whale','data_augment2')
 w.add_thought("changed back to logging val after each epoch, and now return unique labels from  convertIndicesToTrainLabels")
 # w = SummaryWriter("debug")
 
@@ -216,7 +216,7 @@ while epoch <epochs:
         distances,indices = neigh.kneighbors(total_val_outputs)
         labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
 
-        score = map_per_set(total_val_labels,labels_prediction_matrix)
+        score,_ = map_per_set(total_val_labels,labels_prediction_matrix)
         val_score_list.append(score)
         w.add_scalar("Val Score",float(score))
         new_epoch = False
@@ -243,7 +243,9 @@ total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,net,devi
 distances,indices = neigh.kneighbors(total_val_outputs)
 labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
 
-final_score = map_per_set(total_val_labels,labels_prediction_matrix)
+final_score,list_of_scores = map_per_set(total_val_labels,labels_prediction_matrix)
+for score in list_of_scores:
+    w.add_histogram("Score Frequency",score)
 w.add_experiment_parameter("Score",final_score)
 w.close()
 end = time()

@@ -28,13 +28,13 @@
 * Ahh, so the singles have been pushed into the new whale space
     * same label favors new whale by n^2 rather than just n -> too biased
 
-* I believe same label updates is the reason the random outputs look the same, as the other points get carried along for the ride
+> I believe same label updates is the reason the random outputs look the same, as the other points get carried along for the ride
     * How to check if code is correct?
 
+* data augmentation + longer train time
 * if greater than 70% a label, make that the first label
 * take first layer of resnet
 
-* data augmentation + longer train time
 * additive data emphasis feedback at end of each epoch
 
 * test if batch norm after relu works better 

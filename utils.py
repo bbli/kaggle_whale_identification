@@ -47,10 +47,10 @@ def createDictOfImagesForEachLabel(df,img_names):
 
     return dict_of_images
 
-def createDictOfDataLoaders(dict_of_images,batch_size,directory,transform):
+def createDictOfDataLoaders(dict_of_images,batch_size,directory,aug_transform,post_transform):
     dict_of_dataloaders = {}
     for label in dict_of_images.keys():
-        dataset = LabelDataSet(directory,label,dict_of_images,transform)
+        dataset = LabelDataSet(directory,label,dict_of_images,aug_transform=aug_transform,post_transform=post_transform)
         dict_of_dataloaders[label] = DataLoader(dataset,batch_size=batch_size,shuffle=True)
     return dict_of_dataloaders
 

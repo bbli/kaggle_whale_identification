@@ -1,6 +1,7 @@
 from Model import *
 from DataSet import *
 from utils import *
+import albumentations as aug
 
 from time import time
 # from tensorboardX import SummaryWriter
@@ -28,13 +29,6 @@ def cosine_drop(cos_period,explore_period,decay):
 # def main():
 ################ **Loading DataSet** ##################
 start = time()
-resizer = ReSizer(200,350)
-image_scaler = ImageScalar(127.5,1)
-channel_mover = AxisMover(-1,0)
-tensor_converter = ToTensor()
-batch_size = 16
-transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
-
 directory ='subset'
 df = pd.read_csv(directory+'/train.csv')
 df.index = df['Image']
@@ -43,20 +37,39 @@ train_img_names,val_img_names = getTrainValSplit(img_names)
 percentage_new_whale = getPercentageOfNewWhales(val_img_names,df)
 print("Percentage of new whales in val set: ",percentage_new_whale)
 
-transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
-random_dataset = RandomDataSet(df,train_img_names,directory,transform=transform)
+# resizer = ReSizer(200,350)
+# image_scaler = ImageScalar(127.5,1)
+channel_mover = AxisMover(-1,0)
+tensor_converter = ToTensor()
+batch_size = 40
+# transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
+
+## All transform that subclass BasicTransform will have default 0.5 probability of activiating
+aug_transform = aug.Compose([
+        aug.Resize(200,350,p=1.0),
+        aug.VerticalFlip(),
+        aug.HorizontalFlip(),
+        aug.RandomBrightnessContrast(brightness_limit=0.2,contrast_limit=0.2,p=0.5),
+        aug.HueSaturationValue(hue_shift_limit=0,sat_shift_limit=20,val_shift_limit=0,p=0.3),
+        aug.GaussNoise(p=0.3),
+        aug.Normalize(p=1.0)
+        ])
+post_transform = Compose([channel_mover,tensor_converter])
+
+
+random_dataset = RandomDataSet(df,train_img_names,directory,aug_transform=aug_transform,post_transform=post_transform)
 random_loader = DataLoader(random_dataset,shuffle=True,batch_size=batch_size)
 random_img_iterator = iter(random_loader)
 
 dict_of_images = createDictOfImagesForEachLabel(df,train_img_names)
-dict_of_dataloaders = createDictOfDataLoaders(dict_of_images,batch_size,directory,transform)
+dict_of_dataloaders = createDictOfDataLoaders(dict_of_images,batch_size,directory,aug_transform=aug_transform,post_transform=post_transform)
 dict_of_dataiterators = createDictOfDataIterators(dict_of_dataloaders)
 label_names = dict_of_dataiterators.keys()
 same_img_batch_iterator = generateSameImgBatch(dict_of_dataloaders,dict_of_dataiterators,label_names)
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
-w= SummaryWriter('whale','same_label2')
-w.add_thought("same label gradient updates are now with respect to multiple labels")
+w= SummaryWriter('whale','data_augment')
+w.add_thought("lots of code. added image augmentation and increased epochs according")
 # w = SummaryWriter("debug")
 
 # use_cuda = True
@@ -70,7 +83,7 @@ LR = 6e-4
 cos_period = 160
 drop_period = 900
 batch_size = batch_size
-epochs = 5
+epochs = 32
 
 ## lower so we don't spike from new_whale and collapse everything to new whale
 optimizer= optim.SGD(net.parameters(),lr = LR,momentum=0.8)
@@ -87,6 +100,7 @@ w.add_experiment_parameter("Batch Size",batch_size)
 # w.add_experiment_parameter("Drop Period",drop_period)
 ################ **Misc Variables** ##################
 train_start = time()
+val_score_list = []
 # flag = False
 # explore_count = 0
 # total_load_time = 0
@@ -196,7 +210,7 @@ while epoch <epochs:
         neigh = NearestNeighbors(n_neighbors=6)
         neigh.fit(total_train_outputs)
 
-        val_dataset = RandomDataSet(df,val_img_names,directory,transform)
+        val_dataset = RandomDataSet(df,val_img_names,directory,aug_transform=aug_transform,post_transform=post_transform)
         val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
         total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,net,device)
 
@@ -204,6 +218,7 @@ while epoch <epochs:
         labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
 
         score = map_per_set(total_val_labels,labels_prediction_matrix)
+        val_score_list.append(score)
         w.add_scalar("Val Score",score)
 
         del total_train_outputs
@@ -221,7 +236,7 @@ from sklearn.neighbors import NearestNeighbors
 neigh = NearestNeighbors(n_neighbors=10)
 neigh.fit(total_train_outputs)
 
-val_dataset = RandomDataSet(df,val_img_names,directory,transform)
+val_dataset = RandomDataSet(df,val_img_names,directory,aug_transform=aug_transform,post_transform=post_transform)
 val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
 total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,net,device)
 

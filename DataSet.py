@@ -133,14 +133,15 @@ def getListOfImageNames(directory):
 
 ################ **Main DataSet Class** ##################
 class RandomDataSet(Dataset):
-    def __init__(self,df,img_names,directory,transform=None,train=True):
+    def __init__(self,df,img_names,directory,aug_transform=None,post_transform = None,train=True):
         '''
         Descriptions/Assumptions: assumes labels is one level up, and that images have the following pattern "frame*.jpg"
         Arguments: 
         Returns: 
         '''
         self.directory = directory
-        self.transform = transform
+        self.aug_transform = aug_transform
+        self.post_transform = post_transform
         self.train = train
         
         self.df = df
@@ -155,8 +156,11 @@ class RandomDataSet(Dataset):
         pic = cv2.imread(self.directory+'/data/'+img_name)
         # pic = cv2.cvtColor(pic1,cv2.COLOR_BGR2GRAY)
 
-        if self.transform:
-            pic = self.transform(pic)
+        if self.aug_transform:
+            pic = self.aug_transform(image=pic)
+        pic = pic['image']
+        if self.post_transform:
+            pic = self.post_transform(pic)
 
         ################ **Getting Label and Returning** ##################
         if self.train:
@@ -166,9 +170,10 @@ class RandomDataSet(Dataset):
             return pic
 
 class LabelDataSet(Dataset):
-    def __init__(self,directory,label,dict_of_images,transform=None):
+    def __init__(self,directory,label,dict_of_images,aug_transform=None,post_transform=None):
         self.directory = directory
-        self.transform = transform
+        self.aug_transform = aug_transform
+        self.post_transform = post_transform
 
         self.img_names =  dict_of_images[label]
         self.length = len(self.img_names)
@@ -181,8 +186,11 @@ class LabelDataSet(Dataset):
         pic = cv2.imread(self.directory+'/data/'+img_name)
         # pic = cv2.cvtColor(pic1,cv2.COLOR_BGR2GRAY)
 
-        if self.transform:
-            pic = self.transform(pic)
+        if self.aug_transform:
+            pic = self.aug_transform(image=pic)
+        pic = pic['image']
+        if self.post_transform:
+            pic = self.post_transform(pic)
 
         return pic
 

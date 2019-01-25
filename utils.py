@@ -75,7 +75,7 @@ def generateSameImgBatch(dict_of_dataloaders,dict_of_dataiterators,label_names):
 
             yield same_img_batch, [label for x in same_img_batch]
 ########################
-def getSameLabelLoss(torch_tensor):
+def getSameFeatureLoss(torch_tensor):
     for i,output in enumerate(torch_tensor):
         delta_vec = getDeltaVec(output,torch_tensor)
         delta_mag = getMagnitude(delta_vec)
@@ -85,7 +85,7 @@ def getSameLabelLoss(torch_tensor):
             total_loss = loss
         else:
             total_loss = torch.cat((total_loss,loss),0)
-    return total_loss.mean()
+    return total_loss
 
     # delta_mag = torch.
 def getDeltaVec(output,torch_tensor):
@@ -99,8 +99,38 @@ def getMagnitude(tensor):
     tensor = tensor.view(tensor.shape[0],-1)
     delta_mag = torch.norm(tensor,p=2,dim=1)
     return delta_mag
+
+def accumulateTensor(total_tensor,tensor):
+    try:
+        total_tensor = torch.cat((total_tensor,tensor),0)
+        return total_tensor
+    except TypeError:
+        return tensor
+
+def accumulateLabels(total_label,label):
+    try:
+        return total_label + label
+    except TypeError:
+        return label
+
+
 ########################
-def createTargets(label,label_batch):
+def getSameClassiferLoss(outputs,net,criterion,device):
+    targets = torch.ones(outputs.shape[0]).to(device).long()
+    for idx in range(len(outputs)):
+        shifted_outputs = getShiftedOutput(outputs,idx)
+        values = net(outputs,shifted_outputs)
+        loss = criterion(values,targets)
+        if idx == 0:
+            total_loss = loss
+        else:
+            total_loss = torch.cat((total_loss,loss),0)
+    return total_loss
+
+def getShiftedOutput(tensor,idx):
+    return torch.cat((tensor[-idx:],tensor[:-idx]),0)
+########################
+def createFeatureTargets(label,label_batch):
     targets_list = []
     for new_label in label_batch:
         if new_label == label:
@@ -110,19 +140,36 @@ def createTargets(label,label_batch):
     targets_list = np.array(targets_list)
     return torch.from_numpy(targets_list).double()
 
-def getDifferentLabelLoss(output1,output2,targets,criterion):
+def getDifferentLabelLoss(out,output2,targets,criterion):
     '''
-    Descriptions/Assumptions: Assumes output1 is a 1D tensor
+    Descriptions/Assumptions: Assumes out is a 1D tensor
     Arguments: 
     Returns: 
     '''
-    delta_vec = getDeltaVec(output1,output2)
+    delta_vec = getDeltaVec(out,output2)
     delta_mag = getMagnitude(delta_vec)
     loss = criterion(delta_mag,targets)
     loss = torch.pow(loss,2)
     total_loss = loss
-    return total_loss.mean()
+    return total_loss
 
+def createClassifierTargets(label,label_batch):
+    targets_list = []
+    for new_label in label_batch:
+        if new_label == label:
+            targets_list.append(1)
+        else:
+            targets_list.append(0)
+    targets_list = np.array(targets_list)
+    return torch.from_numpy(targets_list).long()
+
+def getDifferentClassifierLoss(out,output2,targets,criterion,net):
+    outputs = out.repeat(len(output2),1)
+    values = net(outputs,output2)
+    loss = criterion(values,targets)
+    return loss
+    
+########################
 def BackpropAndUpdate(w,net,loss,optimizer,scheduler=None):
     optimizer.zero_grad()
     loss.backward()

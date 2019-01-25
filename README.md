@@ -48,7 +48,6 @@
     * perhaps dimension is too high
 * test whether compare pairwise rather than all n^2 is sufficent
 * hypertune margin parameter
-* hypertune num of nearest neighbors
 * cross entropy?
 * take first layer of resnet -> memory issues?
 * architecture(since my net only takes one input in)    

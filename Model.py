@@ -8,7 +8,7 @@ from DataSet import *
 class FunctionalModule(nn.Module):
     def __init__(self):
         super().__init__()
-    def _forward(x):
+    def _forward(self,x):
         raise NotImplementedError
     def forward(self,x):
         if self.show:
@@ -89,7 +89,7 @@ class ResNetDouble(FunctionalModule):
         y = self.double_conv(x)
         return x+y
 
-class Net(FunctionalModule):
+class FeatureNet(FunctionalModule):
     def __init__(self):
         super().__init__()
         self.conv1 = ConvBlock(3, 24, kernel_size=8,stride=2)
@@ -118,10 +118,8 @@ class Net(FunctionalModule):
 
         # self.fc1_dropout = nn.Dropout(0.4)
         self.fc1 = nn.Linear(64,30)
-        # self.fc1_batch = nn.BatchNorm1d(30)
         self.fc2_dropout = nn.Dropout(0.3)
         self.fc2 = nn.Linear(30,6)
-        # self.fc_last = nn.Linear(100,1)
 
     # @property
     # def final_dead_neurons(self):
@@ -140,9 +138,19 @@ class Net(FunctionalModule):
         x = self.fc2_dropout(x)
         x = self.fc2(x)
         return x
+class SimiliarityNet(FunctionalModule):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = nn.Linear(12,35)
+        self.fc2_dropout = nn.Dropout(0.4)
+        self.fc2 = nn.Linear(35,2)
+    def forward(self,x,y):
+        z = torch.cat((x,y),dim=1)
+        z = F.relu(self.fc1(z))
+        z = self.fc2_dropout(z)
+        z = self.fc2(z)
+        return F.softmax(z,dim=1)
 
-def Distance(output1,output2):
-    return torch.sum(torch.abs(output1-output2))
 if __name__ == '__main__':
     net = Net()
     train_loader = DataLoader(train_dataset,batch_size=1,shuffle=False)
@@ -150,5 +158,4 @@ if __name__ == '__main__':
     img1,label1 = next(iterator)
     img2,label2 = next(iterator)
     output1,output2 = net(img1,img2)
-    delta = Distance(output1,output2)
     criterion = nn.HingeEmbeddingLoss(margin=2,)

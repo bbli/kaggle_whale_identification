@@ -117,6 +117,10 @@ batch_size = 16
 # transform = Compose([resizer,image_scaler,channel_mover,tensor_converter])
 
 ## All transform that subclass BasicTransform will have default 0.5 probability of activiating
+eval_aug_transform = aug.Compose([
+        aug.Resize(200,350,p=1.0),
+        aug.Normalize(p=1.0)
+        ])
 aug_transform = aug.Compose([
         aug.Resize(200,350,p=1.0),
         aug.VerticalFlip(),
@@ -141,7 +145,7 @@ same_img_batch_iterator = generateSameImgBatch(dict_of_dataloaders,dict_of_datai
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
 w= SummaryWriter('whale','data_augment2')
-w.add_thought("changed back to logging val after each epoch, and now return unique labels from convertIndicesToTrainLabels")
+w.add_thought("lots of code. added conversion between nearest neighbors probabilities and ranked labels for scoring")
 # w = SummaryWriter("debug")
 
 # use_cuda = True
@@ -159,7 +163,7 @@ LR = 6e-4
 cos_period = 160
 drop_period = 600
 batch_size = batch_size
-max_epochs = 24
+max_epochs = 20
 
 ## lower so we don't spike from new_whale and collapse everything to new whale
 feature_optimizer = optim.SGD(feature_net.parameters(),lr = LR,momentum=0.8)
@@ -315,7 +319,7 @@ while epoch <max_epochs:
         neigh = NearestNeighbors(n_neighbors=20)
         neigh.fit(total_train_outputs)
 
-        val_dataset = RandomDataSet(df,val_img_names,directory,aug_transform=aug_transform,post_transform=post_transform)
+        val_dataset = RandomDataSet(df,val_img_names,directory,aug_transform=eval_aug_transform,post_transform=post_transform)
         val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
         total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,feature_net,device)
 
@@ -343,7 +347,7 @@ total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,f
 neigh = NearestNeighbors(n_neighbors=20)
 neigh.fit(total_train_outputs)
 
-val_dataset = RandomDataSet(df,val_img_names,directory,aug_transform=aug_transform,post_transform=post_transform)
+val_dataset = RandomDataSet(df,val_img_names,directory,aug_transform=eval_aug_transform,post_transform=post_transform)
 val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
 total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,feature_net,device)
 

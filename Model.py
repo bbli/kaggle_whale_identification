@@ -142,7 +142,7 @@ class SimiliarityNet(FunctionalModule):
     def __init__(self):
         super().__init__()
         self.fc1 = nn.Linear(12,35)
-        self.fc2_dropout = nn.Dropout(0.4)
+        self.fc2_dropout = nn.Dropout(0.3)
         self.fc2 = nn.Linear(35,2)
     def forward(self,x,y):
         z = torch.cat((x,y),dim=1)

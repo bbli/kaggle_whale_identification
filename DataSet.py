@@ -158,7 +158,7 @@ class RandomDataSet(Dataset):
 
         if self.aug_transform:
             pic = self.aug_transform(image=pic)
-        pic = pic['image']
+            pic = pic['image']
         if self.post_transform:
             pic = self.post_transform(pic)
 

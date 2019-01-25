@@ -4,7 +4,6 @@ import cv2
 from DataSet import *
 from math import cos,pi
 from more_itertools import unique_everseen
-from collections import Counter
 import numpy as np
 import torch
 
@@ -222,6 +221,15 @@ def convertIndicesToTrainLabels(indices,total_train_labels):
     return labels_matrix
 
 
+def getStackOfOutputs(index_predictions,total_train_outputs):
+    total_output = None
+    for index in index_predictions:
+        out = total_train_outputs[index]
+        out = out.view(1,-1)
+        total_output = accumulateTensor(total_output,out)
+    return total_output
+
+
 ################ **Metric Implementation from a Kaggle Kernel** ##################
 ## Note it just takes the top 5, and doesn't account for repeats/movement in rankings due to majority, etc...
 ## I modified map_per_set to also return a counter of the scores
@@ -259,5 +267,4 @@ def map_per_set(labels, predictions):
     score : double
     """
     list_of_scores = [map_per_image(l, p) for l,p in zip(labels, predictions)]
-    scores_counter = Counter(list_of_scores) 
     return np.mean(list_of_scores),list_of_scores 

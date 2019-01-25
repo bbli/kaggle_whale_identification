@@ -11,7 +11,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch import optim
 from torch.optim.lr_scheduler import LambdaLR
+from sklearn.neighbors import NearestNeighbors
 from math import cos,pi
+from collections import Counter
 from line_profiler import LineProfiler
 lp = LineProfiler()
 import warnings
@@ -58,8 +60,43 @@ def getAllPairwiseClassifierLosses(total_same_output,total_same_label_batch,rand
            total_different_classifier_loss = different_classifier_loss
         else:
             total_different_classifier_loss = torch.cat((total_different_classifier_loss,different_classifier_loss),0)
-    ########################
     return total_different_classifier_loss
+########################
+def convertNearestIndicesToProbabilities(indices,total_val_outputs,total_train_outputs):
+    global sim_net
+    global device
+    total_val_outputs = torch.Tensor(total_val_outputs).float().to(device)
+    total_train_outputs = torch.Tensor(total_train_outputs).float().to(device)
+
+    total_preds = None
+    for index_predictions,out in zip(indices,total_val_outputs):
+        closest_outputs = getStackOfOutputs(index_predictions,total_train_outputs) 
+        out = out.repeat(len(closest_outputs),1)
+        preds = sim_net(out,closest_outputs)
+        preds = preds[:,1]
+        total_preds = accumulateTensor(total_preds,preds.view(1,-1))
+    total_preds = total_preds.cpu().detach().numpy()
+    return total_preds
+def convertProbabilitiesToRanking(probs_matrix,labels_matrix):
+    ranked_labels_matrix = []
+    for index_probs,index_labels in zip(probs_matrix,labels_matrix):
+        best_labels_dict = getBestLabels(index_probs,index_labels)
+        sorted_pairs = sorted(best_labels_dict.items(),key=lambda x:x[1],reverse=True)
+        ranked_labels = [x[0] for x in sorted_pairs]
+        ranked_labels_matrix.append(ranked_labels)
+    return ranked_labels_matrix
+
+def getBestLabels(index_probs,index_labels):
+    best_values_dict = {}
+    for prob,label in zip(index_probs,index_labels):
+        try:
+            current_prob = best_values_dict[label]
+            if prob>current_prob:
+                best_values_dict[label] = prob
+        except KeyError:
+            best_values_dict[label] = prob
+    return best_values_dict
+
 # @lp
 # def main():
 ################ **Loading DataSet** ##################
@@ -122,7 +159,7 @@ LR = 6e-4
 cos_period = 160
 drop_period = 600
 batch_size = batch_size
-epochs = 24
+max_epochs = 24
 
 ## lower so we don't spike from new_whale and collapse everything to new whale
 feature_optimizer = optim.SGD(feature_net.parameters(),lr = LR,momentum=0.8)
@@ -138,7 +175,7 @@ classifier_criterion = nn.CrossEntropyLoss(reduction='none')
 w.add_experiment_parameter("Learning Rate",LR)
 w.add_experiment_parameter("Batch Size",batch_size)
 # w.add_experiment_parameter("Cosine Period",cos_period)
-# w.add_experiment_parameter("Epochs",epochs)
+# w.add_experiment_parameter("Epochs",max_epochs)
 # w.add_experiment_parameter("Drop Period",drop_period)
 ################ **Misc Variables** ##################
 train_start = time()
@@ -151,7 +188,7 @@ val_score_list = []
 ################ **Training Code** ##################
 epoch=0
 new_epoch = False
-while epoch <epochs:
+while epoch <max_epochs:
     # print("Current epoch: ",epoch)
     # print(feature_net.fc2.weight.grad)
     feature_net.train()
@@ -180,12 +217,12 @@ while epoch <epochs:
             img_count += len(same_img_batch) 
             outputs = feature_net(same_img_batch)
 
-            same_classifier_loss = getSameClassiferLoss(outputs,sim_net,classifier_criterion,device)
-            same_feature_loss = getSameFeatureLoss(outputs)
+            if epoch> 0.3*max_epochs:
+                same_classifier_loss = getSameClassiferLoss(outputs,sim_net,classifier_criterion,device)
+                total_same_classifier_loss = accumulateTensor(total_same_classifier_loss,same_classifier_loss)
 
-            ## Bookkeeping
+            same_feature_loss = getSameFeatureLoss(outputs)
             total_same_feature_loss = accumulateTensor(total_same_feature_loss,same_feature_loss)
-            total_same_classifier_loss = accumulateTensor(total_same_classifier_loss,same_classifier_loss)
     # print("Same Classification Loss: ",total_same_classifier_loss.mean())
     ################ ** Mostly Different Labels** ##################
     ## Restart a dataloader if exhausted
@@ -203,7 +240,8 @@ while epoch <epochs:
     total_same_output = feature_net(total_same_img_batch)
     random_output = feature_net(random_img_batch)
     ########################
-    total_different_classifier_loss = getAllPairwiseClassifierLosses(total_same_output,total_same_label_batch,random_label_batch,random_output)
+    if epoch>0.3*max_epochs:
+        total_different_classifier_loss = getAllPairwiseClassifierLosses(total_same_output,total_same_label_batch,random_label_batch,random_output)
     total_different_feature_loss = getAllPairwiseFeatureLosses(total_same_output,total_same_label_batch,random_label_batch,random_output)
     # print("Different Classification Loss: ",total_different_classifier_loss.mean())
     ################ **Backprop Time** ##################
@@ -213,23 +251,25 @@ while epoch <epochs:
     total_feature_loss = total_different_feature_loss + total_same_feature_loss
     total_feature_loss.backward(retain_graph=True)
 
-    ## Unequal weighting of same and different labels
-    total_classifier_loss = torch.cat((total_same_classifier_loss,total_different_classifier_loss))
-    total_classifier_loss = total_classifier_loss.mean()
-    total_classifier_loss.backward()
+    if epoch>0.3*max_epochs:
+        ## Unequal weighting of same and different labels
+        total_classifier_loss = torch.cat((total_same_classifier_loss,total_different_classifier_loss))
+        total_classifier_loss = total_classifier_loss.mean()
+        total_classifier_loss.backward()
 
     ## Log
     w.add_scalar("Different Loss",total_different_feature_loss.item())
     print("Different Loss: ",total_different_feature_loss.item())
     w.add_scalar("Same Loss",total_same_feature_loss.item())
     print("Same Loss: ",total_same_feature_loss.item())
-    w.add_scalar("Classification Loss",total_classifier_loss.item())
-    print("Classification Loss: ",total_classifier_loss.item())
+    if epoch>0.3*max_epochs:
+        w.add_scalar("Classification Loss",total_classifier_loss.item())
+        print("Classification Loss: ",total_classifier_loss.item())
 
     ################ **Updating** ##################
-    
-    classifier_optimizer.step()
-    classifier_scheduler.step()
+    if epoch>0.3*max_epochs:
+        classifier_optimizer.step()
+        classifier_scheduler.step()
 
     feature_optimizer.step()
     feature_scheduler.step()
@@ -247,28 +287,32 @@ while epoch <epochs:
     # w.add_scalar("Percentage of Dead Neurons Final Layer",net.freq_of_dead_neurons)
     # w.add_scalar("Bias Value before Final Layer",net.avg_bias_value)
     w.add_scalar("Feature Net LR",feature_optimizer.state_dict()['param_groups'][0]['lr'])
-    w.add_scalar("Classifier Net LR",classifier_optimizer.state_dict()['param_groups'][0]['lr'])
+    if epoch>0.3*max_epochs:
+        w.add_scalar("Classifier Net LR",classifier_optimizer.state_dict()['param_groups'][0]['lr'])
+
+        del same_classifier_loss
+
+        del total_same_classifier_loss
+        del total_different_classifier_loss
+
+        del total_classifier_loss
 
     del same_feature_loss
-    del same_classifier_loss
-
     del total_same_feature_loss
-    del total_same_classifier_loss
-    del total_different_classifier_loss
     del total_different_feature_loss
-
-    del total_classifier_loss
 
     del random_img_batch
     del same_img_batch
     del total_same_img_batch
     ################ **Evaluating after a certain period** ##################
     if new_epoch == True:
+    # if True:
         feature_net.eval()
+        sim_net.eval()
+        
         total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,feature_net,device)
 
-        from sklearn.neighbors import NearestNeighbors
-        neigh = NearestNeighbors(n_neighbors=10)
+        neigh = NearestNeighbors(n_neighbors=20)
         neigh.fit(total_train_outputs)
 
         val_dataset = RandomDataSet(df,val_img_names,directory,aug_transform=aug_transform,post_transform=post_transform)
@@ -276,9 +320,11 @@ while epoch <epochs:
         total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,feature_net,device)
 
         distances,indices = neigh.kneighbors(total_val_outputs)
-        labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
+        labels_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
+        probs_matrix = convertNearestIndicesToProbabilities(indices,total_val_outputs,total_train_outputs)
+        ranked_labels_matrix = convertProbabilitiesToRanking(probs_matrix,labels_matrix)
 
-        score,_ = map_per_set(total_val_labels,labels_prediction_matrix)
+        score,_ = map_per_set(total_val_labels,ranked_labels_matrix)
         val_score_list.append(score)
         w.add_scalar("Val Score",float(score))
         new_epoch = False
@@ -294,8 +340,7 @@ eval_start = time()
 feature_net.eval()
 total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,feature_net,device)
 
-from sklearn.neighbors import NearestNeighbors
-neigh = NearestNeighbors(n_neighbors=10)
+neigh = NearestNeighbors(n_neighbors=20)
 neigh.fit(total_train_outputs)
 
 val_dataset = RandomDataSet(df,val_img_names,directory,aug_transform=aug_transform,post_transform=post_transform)
@@ -303,12 +348,13 @@ val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
 total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,feature_net,device)
 
 distances,indices = neigh.kneighbors(total_val_outputs)
-labels_prediction_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
+labels_matrix = convertIndicesToTrainLabels(indices,total_train_labels,total_train_outputs)
 
-final_score,list_of_scores = map_per_set(total_val_labels,labels_prediction_matrix)
+final_score,list_of_scores = map_per_set(total_val_labels,labels_matrix)
 for score in list_of_scores:
     w.add_histogram("Score Frequency",score)
 w.add_experiment_parameter("Score",final_score)
+counter = Counter(list_of_scores)
 w.close()
 end = time()
 eval_end = time()

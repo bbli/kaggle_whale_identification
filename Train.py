@@ -346,6 +346,8 @@ train_end = time()
 ################ **Evaluating** ##################
 eval_start = time()
 feature_net.eval()
+sim_net.eval()
+
 total_train_outputs,total_train_labels = getAllOutputsFromLoader(random_loader,feature_net,device)
 
 neigh = NearestNeighbors(n_neighbors=20)
@@ -356,12 +358,15 @@ val_loader = DataLoader(val_dataset,shuffle=False,batch_size=64)
 total_val_outputs,total_val_labels = getAllOutputsFromLoader(val_loader,feature_net,device)
 
 distances,indices = neigh.kneighbors(total_val_outputs)
-labels_matrix = convertIndicesToTrainLabels(indices,total_train_labels,total_train_outputs)
+labels_matrix = convertIndicesToTrainLabels(indices,total_train_labels)
+probs_matrix = convertNearestIndicesToProbabilities(indices,total_val_outputs,total_train_outputs)
+ranked_labels_matrix = convertProbabilitiesToRanking(probs_matrix,labels_matrix)
 
-final_score,list_of_scores = map_per_set(total_val_labels,labels_matrix)
-for score in list_of_scores:
-    w.add_histogram("Score Frequency",score)
-w.add_experiment_parameter("Score",final_score)
+
+final_score,list_of_scores = map_per_set(total_val_labels,ranked_labels_matrix)
+# for score in list_of_scores:
+    # w.add_histogram("Score Frequency",score)
+# w.add_experiment_parameter("Score",final_score)
 counter = Counter(list_of_scores)
 w.close()
 end = time()

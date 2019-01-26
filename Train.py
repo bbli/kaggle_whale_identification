@@ -160,8 +160,8 @@ sim_net.to(device)
 sim_net.train()
 
 LR = 6e-4
-cos_period = 160
-drop_period = 600
+cos_period = 125
+drop_period = 300
 batch_size = batch_size
 max_epochs = 20
 
@@ -171,7 +171,7 @@ feature_scheduler = LambdaLR(feature_optimizer ,lr_lambda=cosine_drop(cos_period
 feature_criterion = nn.HingeEmbeddingLoss(margin = 9,reduction='none')
 
 classifier_optimizer = optim.SGD(sim_net.parameters(),lr = 1.25*LR,momentum=0.8)
-classifier_scheduler = LambdaLR(classifier_optimizer ,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
+classifier_scheduler = LambdaLR(classifier_optimizer ,lr_lambda=cosine_drop(cos_period,2*drop_period,0.4))
 classifier_criterion = nn.CrossEntropyLoss(reduction='none')
 
 
@@ -224,9 +224,9 @@ while epoch <max_epochs:
             if epoch> 0.3*max_epochs:
                 same_classifier_loss = getSameClassiferLoss(outputs,sim_net,classifier_criterion,device)
                 total_same_classifier_loss = accumulateTensor(total_same_classifier_loss,same_classifier_loss)
-
-            same_feature_loss = getSameFeatureLoss(outputs)
-            total_same_feature_loss = accumulateTensor(total_same_feature_loss,same_feature_loss)
+            else:
+                same_feature_loss = getSameFeatureLoss(outputs)
+                total_same_feature_loss = accumulateTensor(total_same_feature_loss,same_feature_loss)
     # print("Same Classification Loss: ",total_same_classifier_loss.mean())
     ################ ** Mostly Different Labels** ##################
     ## Restart a dataloader if exhausted
@@ -237,41 +237,42 @@ while epoch <max_epochs:
         random_img_iterator = iter(random_loader)
         random_img_batch, random_label_batch = next(random_img_iterator)
         random_img_batch = random_img_batch.to(device)
-        epoch +=1
         new_epoch = True
-        print("Next epoch: ",epoch)
 
     total_same_output = feature_net(total_same_img_batch)
     random_output = feature_net(random_img_batch)
     ########################
-    if epoch>0.3*max_epochs+1:
+    if epoch>0.3*max_epochs:
         total_different_classifier_loss = getAllPairwiseClassifierLosses(total_same_output,total_same_label_batch,random_label_batch,random_output)
-    total_different_feature_loss = getAllPairwiseFeatureLosses(total_same_output,total_same_label_batch,random_label_batch,random_output)
+    else:
+        total_different_feature_loss = getAllPairwiseFeatureLosses(total_same_output,total_same_label_batch,random_label_batch,random_output)
     # print("Different Classification Loss: ",total_different_classifier_loss.mean())
     ################ **Backprop Time** ##################
-    ## Equal weighting of same and different labels to encourage clustering
-    total_different_feature_loss = total_different_feature_loss.mean()
-    total_same_feature_loss = total_same_feature_loss.mean()
-    total_feature_loss = total_different_feature_loss + total_same_feature_loss
-    total_feature_loss.backward(retain_graph=True)
 
-    if epoch>0.3*max_epochs+1:
+    if epoch>0.3*max_epochs:
         ## Unequal weighting of same and different labels
         total_classifier_loss = torch.cat((total_same_classifier_loss,total_different_classifier_loss))
         total_classifier_loss = total_classifier_loss.mean()
         total_classifier_loss.backward()
+    else:
+        ## Equal weighting of same and different labels to encourage clustering
+        total_different_feature_loss = total_different_feature_loss.mean()
+        total_same_feature_loss = total_same_feature_loss.mean()
+        total_feature_loss = total_different_feature_loss + total_same_feature_loss
+        total_feature_loss.backward()
 
     ## Log
-    w.add_scalar("Different Loss",total_different_feature_loss.item())
-    print("Different Loss: ",total_different_feature_loss.item())
-    w.add_scalar("Same Loss",total_same_feature_loss.item())
-    print("Same Loss: ",total_same_feature_loss.item())
-    if epoch>0.3*max_epochs+1:
+    if epoch>0.3*max_epochs:
         w.add_scalar("Classification Loss",total_classifier_loss.item())
         print("Classification Loss: ",total_classifier_loss.item())
+    else:
+        w.add_scalar("Different Loss",total_different_feature_loss.item())
+        print("Different Loss: ",total_different_feature_loss.item())
+        w.add_scalar("Same Loss",total_same_feature_loss.item())
+        print("Same Loss: ",total_same_feature_loss.item())
 
     ################ **Updating** ##################
-    if epoch>0.3*max_epochs+1:
+    if epoch>0.3*max_epochs:
         classifier_optimizer.step()
         classifier_scheduler.step()
 
@@ -291,8 +292,8 @@ while epoch <max_epochs:
     # w.add_scalar("Percentage of Dead Neurons Final Layer",net.freq_of_dead_neurons)
     # w.add_scalar("Bias Value before Final Layer",net.avg_bias_value)
     w.add_scalar("Feature Net LR",feature_optimizer.state_dict()['param_groups'][0]['lr'])
-    if epoch>0.3*max_epochs+1:
-        w.add_scalar("Classifier Net LR",classifier_optimizer.state_dict()['param_groups'][0]['lr'])
+    w.add_scalar("Classifier Net LR",classifier_optimizer.state_dict()['param_groups'][0]['lr'])
+    if epoch>0.3*max_epochs:
 
         del same_classifier_loss
 
@@ -301,9 +302,10 @@ while epoch <max_epochs:
 
         del total_classifier_loss
 
-    del same_feature_loss
-    del total_same_feature_loss
-    del total_different_feature_loss
+    else:
+        del same_feature_loss
+        del total_same_feature_loss
+        del total_different_feature_loss
 
     del random_img_batch
     del same_img_batch
@@ -332,6 +334,8 @@ while epoch <max_epochs:
         val_score_list.append(score)
         w.add_scalar("Val Score",float(score))
         new_epoch = False
+        epoch += 1
+        print("Next epoch: ",epoch)
 
         del total_train_outputs
         del total_train_labels

@@ -145,7 +145,7 @@ same_img_batch_iterator = generateSameImgBatch(dict_of_dataloaders,dict_of_datai
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
 w= SummaryWriter('whale','classifier')
-w.add_thought("lots of code. added conversion between nearest neighbors probabilities and ranked labels for scoring")
+w.add_thought("made different and same classification loss have equal weighting, b/c all probabilities just got pushed down")
 # w = SummaryWriter("debug")
 
 # use_cuda = True
@@ -250,8 +250,10 @@ while epoch <max_epochs:
     ################ **Backprop Time** ##################
 
     if epoch>0.3*max_epochs:
-        ## Unequal weighting of same and different labels
-        total_classifier_loss = torch.cat((total_same_classifier_loss,total_different_classifier_loss))
+        total_same_classifier_loss = total_same_classifier_loss.mean()
+        total_different_classifier_loss = total_different_classifier_loss.mean()
+        # total_classifier_loss = torch.cat((total_same_classifier_loss,total_different_classifier_loss))
+        total_classifier_loss = total_same_classifier_loss + total_different_classifier_loss
         total_classifier_loss = total_classifier_loss.mean()
         total_classifier_loss.backward()
     else:

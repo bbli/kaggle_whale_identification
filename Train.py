@@ -145,11 +145,11 @@ same_img_batch_iterator = generateSameImgBatch(dict_of_dataloaders,dict_of_datai
 ################ **Setup and Hyperparameters** ##################
 start_time = time()
 w= SummaryWriter('whale','classifier')
-w.add_thought("made different and same classification loss have equal weighting, b/c all probabilities just got pushed down")
+w.add_thought("removed hidden layer in feature net, increased feature net output to 30 and removed dropout from sim net")
 # w = SummaryWriter("debug")
 
-# use_cuda = True
-use_cuda = False
+use_cuda = True
+# use_cuda = False
 device = torch.device("cuda" if  use_cuda else "cpu")
 feature_net = FeatureNet()
 feature_net.to(device)
@@ -160,17 +160,17 @@ sim_net.to(device)
 sim_net.train()
 
 LR = 6e-4
-cos_period = 125
-drop_period = 300
+cos_period = 45
+drop_period = 125
 batch_size = batch_size
 max_epochs = 20
 
 ## lower so we don't spike from new_whale and collapse everything to new whale
 feature_optimizer = optim.SGD(feature_net.parameters(),lr = LR,momentum=0.8)
 feature_scheduler = LambdaLR(feature_optimizer ,lr_lambda=cosine_drop(cos_period,drop_period,0.4))
-feature_criterion = nn.HingeEmbeddingLoss(margin = 9,reduction='none')
+feature_criterion = nn.HingeEmbeddingLoss(margin = 20,reduction='none')
 
-classifier_optimizer = optim.SGD(sim_net.parameters(),lr = 1.25*LR,momentum=0.8)
+classifier_optimizer = optim.SGD(sim_net.parameters(),lr = LR,momentum=0.8)
 classifier_scheduler = LambdaLR(classifier_optimizer ,lr_lambda=cosine_drop(cos_period,2*drop_period,0.4))
 classifier_criterion = nn.CrossEntropyLoss(reduction='none')
 
@@ -221,7 +221,7 @@ while epoch <max_epochs:
             img_count += len(same_img_batch) 
             outputs = feature_net(same_img_batch)
 
-            if epoch> 0.3*max_epochs:
+            if epoch> 0.2*max_epochs:
                 same_classifier_loss = getSameClassiferLoss(outputs,sim_net,classifier_criterion,device)
                 total_same_classifier_loss = accumulateTensor(total_same_classifier_loss,same_classifier_loss)
             else:
@@ -242,18 +242,18 @@ while epoch <max_epochs:
     total_same_output = feature_net(total_same_img_batch)
     random_output = feature_net(random_img_batch)
     ########################
-    if epoch>0.3*max_epochs:
+    if epoch>0.2*max_epochs:
         total_different_classifier_loss = getAllPairwiseClassifierLosses(total_same_output,total_same_label_batch,random_label_batch,random_output)
     else:
         total_different_feature_loss = getAllPairwiseFeatureLosses(total_same_output,total_same_label_batch,random_label_batch,random_output)
     # print("Different Classification Loss: ",total_different_classifier_loss.mean())
     ################ **Backprop Time** ##################
 
-    if epoch>0.3*max_epochs:
+    if epoch>0.2*max_epochs:
         total_same_classifier_loss = total_same_classifier_loss.mean()
         total_different_classifier_loss = total_different_classifier_loss.mean()
         # total_classifier_loss = torch.cat((total_same_classifier_loss,total_different_classifier_loss))
-        total_classifier_loss = total_same_classifier_loss + total_different_classifier_loss
+        total_classifier_loss = 0.6*total_same_classifier_loss + 0.4*total_different_classifier_loss
         total_classifier_loss = total_classifier_loss.mean()
         total_classifier_loss.backward()
     else:
@@ -264,7 +264,7 @@ while epoch <max_epochs:
         total_feature_loss.backward()
 
     ## Log
-    if epoch>0.3*max_epochs:
+    if epoch>0.2*max_epochs:
         w.add_scalar("Classification Loss",total_classifier_loss.item())
         print("Classification Loss: ",total_classifier_loss.item())
     else:
@@ -274,7 +274,7 @@ while epoch <max_epochs:
         print("Same Loss: ",total_same_feature_loss.item())
 
     ################ **Updating** ##################
-    if epoch>0.3*max_epochs:
+    if epoch>0.2*max_epochs:
         classifier_optimizer.step()
         classifier_scheduler.step()
 
@@ -295,7 +295,7 @@ while epoch <max_epochs:
     # w.add_scalar("Bias Value before Final Layer",net.avg_bias_value)
     w.add_scalar("Feature Net LR",feature_optimizer.state_dict()['param_groups'][0]['lr'])
     w.add_scalar("Classifier Net LR",classifier_optimizer.state_dict()['param_groups'][0]['lr'])
-    if epoch>0.3*max_epochs:
+    if epoch>0.2*max_epochs:
 
         del same_classifier_loss
 

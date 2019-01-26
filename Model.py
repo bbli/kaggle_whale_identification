@@ -118,8 +118,8 @@ class FeatureNet(FunctionalModule):
 
         # self.fc1_dropout = nn.Dropout(0.4)
         self.fc1 = nn.Linear(64,30)
-        self.fc2_dropout = nn.Dropout(0.3)
-        self.fc2 = nn.Linear(30,6)
+        # self.fc2_dropout = nn.Dropout(0.3)
+        # self.fc2 = nn.Linear(30,10)
 
     # @property
     # def final_dead_neurons(self):
@@ -132,22 +132,23 @@ class FeatureNet(FunctionalModule):
         x = self.features(x)
         x = x.view(x.shape[0],-1)
         
+        x = self.fc1(x)
         # x = self.fc1_dropout(x)
-        x = F.relu(self.fc1(x))
+        # x = F.relu(self.fc1(x))
 
-        x = self.fc2_dropout(x)
-        x = self.fc2(x)
+        # x = self.fc2_dropout(x)
+        # x = self.fc2(x)
         return x
 class SimiliarityNet(FunctionalModule):
     def __init__(self):
         super().__init__()
-        self.fc1 = nn.Linear(12,35)
-        self.fc2_dropout = nn.Dropout(0.3)
+        self.fc1 = nn.Linear(60,35)
+        # self.fc2_dropout = nn.Dropout(0.3)
         self.fc2 = nn.Linear(35,2)
     def forward(self,x,y):
         z = torch.cat((x,y),dim=1)
         z = F.relu(self.fc1(z))
-        z = self.fc2_dropout(z)
+        # z = self.fc2_dropout(z)
         z = self.fc2(z)
         return F.softmax(z,dim=1)
 

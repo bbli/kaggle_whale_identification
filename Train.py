@@ -105,6 +105,8 @@ directory ='subset'
 df = pd.read_csv(directory+'/train.csv')
 df.index = df['Image']
 img_names = getListOfImageNames(directory+'/data')
+img_names = getSelectedImages(img_names,df)
+
 train_img_names,val_img_names = getTrainValSplit(img_names)
 percentage_new_whale = getPercentageOfNewWhales(val_img_names,df)
 print("Percentage of new whales in val set: ",percentage_new_whale)

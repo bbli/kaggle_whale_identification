@@ -28,6 +28,33 @@ def getTrainValSplit(img_names):
     train_image_names,test_img_names = local[0:break_point], local[break_point:]
     return train_image_names, test_img_names
 
+def getOneImageLabels(df):
+    filtered_df = df['Id'].value_counts()[1:]
+    one_img_labels = { x+'.jpg': 1 for x in filtered_df[filtered_df==1].index}
+    return one_img_labels
+
+def getNewWhales(df):
+    filtered_df = df[df.Id =='new_whale']['Id']
+    new_whales = dict(filtered_df)
+    return new_whales
+def getSelectedImages(img_names,df):
+    blacklisted_images = {img: 0 for img in df['Image']}
+    one_img_labels_dict = getOneImageLabels(df)
+    new_whales = getNewWhales(df)
+    for img in one_img_labels_dict:
+        # assert img in one_img_labels_dict
+        blacklisted_images[img] = 1
+    for img in new_whales:
+        # assert img in new_whales
+        blacklisted_images[img] = 1
+    filtered_list = []
+    for img in img_names:
+        if blacklisted_images[img]==1:
+            pass
+        else:
+            filtered_list.append(img)
+    return filtered_list
+
 def getPercentageOfNewWhales(img_names,df):
     count = 0
     for img_name in img_names:
